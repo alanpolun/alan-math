@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學習記錄</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header with back button -->
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-4">
+                <a href="index.html"
+                   class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-full transition-all hover:scale-105">
+                    ← Go back
+                </a>
+                <h1 class="text-3xl font-bold text-indigo-600">學習記錄</h1>
+            </div>
+            <button onclick="loadLogs()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full">
+                重新整理
+            </button>
+        </div>
+
+        <!-- Tab buttons -->
+        <div class="flex gap-4 mb-6">
+            <button id="tab-test" onclick="switchTab('test-log')"
+                class="px-6 py-3 rounded-full font-bold text-lg transition-all border-2 border-indigo-500 text-indigo-500 bg-white">
+                練習記錄
+            </button>
+            <button id="tab-incorrect" onclick="switchTab('incorrect-log')"
+                class="px-6 py-3 rounded-full font-bold text-lg transition-all border-2 border-gray-300 text-gray-400 bg-white hover:border-red-400 hover:text-red-400">
+                錯誤記錄
+            </button>
+        </div>
+
+        <div id="log-list" class="space-y-4"></div>
+        <p id="empty" class="text-gray-500 text-center mt-10 hidden">暫無記錄</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDX-775T11BjNbJ6pyJ8aHfiy1mnieodA4",
+            authDomain: "p2math-791c8.firebaseapp.com",
+            projectId: "p2math-791c8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let currentTab = 'test-log';
+
+        window.switchTab = function(tab) {
+            currentTab = tab;
+            document.getElementById('tab-test').className = tab === 'test-log'
+                ? 'px-6 py-3 rounded-full font-bold text-lg transition-all border-2 border-indigo-500 text-indigo-500 bg-white'
+                : 'px-6 py-3 rounded-full font-bold text-lg transition-all border-2 border-gray-300 text-gray-400 bg-white hover:border-indigo-400 hover:text-indigo-400';
+            document.getElementById('tab-incorrect').className = tab === 'incorrect-log'
+                ? 'px-6 py-3 rounded-full font-bold text-lg transition-all border-2 border-indigo-500 text-indigo-500 bg-white'
+                : 'px-6 py-3 rounded-full font-bold text-lg transition-all border-2 border-gray-300 text-gray-400 bg-white hover:border-red-400 hover:text-red-400';
+            loadLogs();
+        };
+
+        window.loadLogs = async function() {
+            const list = document.getElementById('log-list');
+            const empty = document.getElementById('empty');
+            list.innerHTML = '<p class="text-gray-500 text-center">載入中...</p>';
+            empty.classList.add('hidden');
+
+            try {
+                const q = query(
+                    collection(db, currentTab),
+                    orderBy("timestamp", "desc"),
+                    limit(100)
+                );
+                const snapshot = await getDocs(q);
+
+                if (snapshot.empty) {
+                    list.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+                list.innerHTML = '';
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (currentTab === 'test-log') {
+                        renderTestLog(list, doc.id, data);
+                    } else {
+                        renderIncorrectLog(list, doc.id, data);
+                    }
+                });
+            } catch (e) {
+                list.innerHTML = `<p class="text-red-500">載入失敗：${e.message}</p>`;
+                console.error(e);
+            }
+        };
+
+        function renderTestLog(list, id, data) {
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-2xl p-6 shadow-md border-l-8 border-indigo-400';
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-xs text-gray-400">${id}</span>
+                    <span class="text-xs text-gray-400">${data.timestamp || 'N/A'}</span>
+                </div>
+                <p class="text-xl font-bold text-slate-800 mb-2">${data.test || '未知試卷'}</p>
+                <p class="text-lg text-indigo-600 font-bold">用時：<strong>${data.timespend || 'N/A'}</strong></p>
+            `;
+            list.appendChild(div);
+        }
+
+        function renderIncorrectLog(list, id, data) {
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-2xl p-6 shadow-md border-l-8 border-red-400';
+            div.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-xs text-gray-400">${id}</span>
+                    <span class="text-xs text-gray-400">${data.timestamp || 'N/A'}</span>
+                </div>
+                <p class="text-xl font-bold text-slate-800 mb-2">題目：${data.question || 'N/A'}</p>
+                <div class="flex gap-8 text-lg">
+                    <span class="text-green-600">正確答案：<strong>${data.correctAnswer ?? 'N/A'}</strong></span>
+                    <span class="text-red-500">學生答案：<strong>${data.studentAnswer ?? 'N/A'}</strong></span>
+                </div>
+            `;
+            list.appendChild(div);
+        }
+
+        loadLogs();
+    </script>
+</body>
+</html>

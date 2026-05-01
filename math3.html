@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加減乘除應用題</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDX-775T11BjNbJ6pyJ8aHfiy1mnieodA4",
+            projectId: "p2math-791c8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        window.db = db;
+        window.addDoc = addDoc;
+        window.collection = collection; // expose for non-module scripts
+    </script>
+    <style>
+        body {
+            background-color: #f0f9ff;
+            font-family: '微軟正黑體', sans-serif;
+        }
+
+        .card {
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4 relative">
+    <a href="index.html"
+        class="absolute top-4 left-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full transition-colors shadow-lg">←
+        返回</a>
+
+    <div id="app" class="card w-full max-w-2xl p-8 text-center">
+        <div id="start-screen">
+            <h1 class="text-4xl font-bold text-blue-600 mb-6">🧮 小二數學大挑戰</h1>
+            <p class="text-gray-600 mb-8 text-lg">準備好挑戰 10 題加減乘除應用題嗎？</p>
+            <button onclick="startQuiz()"
+                class="bg-blue-500 hover:bg-blue-600 text-white text-2xl font-bold py-4 px-12 rounded-full transition-transform active:scale-95 shadow-lg">
+                開始挑戰
+            </button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+            <div class="flex justify-between mb-6 text-xl font-bold text-gray-500">
+                <span>第 <span id="current-idx">1</span> / 10 題</span>
+                <span id="timer" class="text-red-500 font-mono">00:00</span>
+            </div>
+            <div id="question-text"
+                class="text-3xl font-bold text-slate-800 mb-8 min-h-[120px] flex items-center justify-center">
+                題目載入中...
+            </div>
+            <input type="number" id="answer-input"
+                class="w-full text-5xl text-center border-b-4 border-blue-400 outline-none pb-2 mb-8 font-mono"
+                placeholder="?">
+            <button onclick="nextQuestion()" class="w-full bg-slate-800 text-white text-2xl font-bold py-4 rounded-2xl">
+                下一題
+            </button>
+        </div>
+
+        <div id="result-screen" class="hidden text-left">
+            <h2 class="text-3xl font-bold text-center text-green-600 mb-4">挑戰完成！</h2>
+            <p id="total-time" class="text-center text-xl mb-6 font-bold bg-gray-100 py-2 rounded-lg"></p>
+            <div id="result-list" class="space-y-4 max-h-[400px] overflow-y-auto p-2"></div>
+            <button onclick="location.reload()"
+                class="w-full mt-6 bg-blue-500 text-white py-4 rounded-xl font-bold text-xl">
+                再玩一次
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 嵌入題庫數據
+        const questionDb = [
+            { "q": "小明有 137 元，媽媽給他 284 元，他現在共有多少元？", "a": 421, "s": "137 + 284 = 421。百位進位一次，十位進位一次。" },
+            { "q": "圖書館原有 642 本書，借走 58 本後，又借走 29 本，還剩多少本？", "a": 555, "s": "642 - 58 - 29 = 555。連續兩次借位運算。" },
+            { "q": "一盒餅乾有 24 塊，3 盒共有多少塊？", "a": 72, "s": "24 x 3 = 72。" },
+            { "q": "老師有 38 顆糖果，平均分給 4 個小朋友，每人分得多少顆？還剩幾顆？（答案請填每人分得的顆數）", "a": 9, "s": "38 ÷ 4 = 9 ... 2。每人得 9 顆，剩 2 顆。" },
+            { "q": "小華排隊，從前面數是第 17 個，從後面數是第 14 個，這排共有多少人？", "a": 30, "s": "17 + 14 - 1 = 30。因為小華被數了兩次，所以要減 1。" },
+            { "q": "一根繩子剪了 6 刀，每段長 8 公分，這根繩子原長多少公分？", "a": 56, "s": "剪 6 刀代表有 7 段。8 x 7 = 56 公分。" },
+            { "q": "文具店有紅筆 145 支，藍筆比紅筆多 78 支，藍筆有多少支？", "a": 223, "s": "145 + 78 = 223。" },
+            { "q": "小麗買了 4 袋蘋果，每袋有 9 個，吃掉了 7 個後，還剩多少個？", "a": 29, "s": "4 x 9 - 7 = 29。先乘法後減法。" },
+            { "q": "一條圍巾售價 265 元，比一頂帽子貴 87 元，帽子售價多少元？", "a": 178, "s": "265 - 87 = 178。十位和個位皆需借位。" },
+            { "q": "爸爸今年 36 歲，剛好是小明的 4 倍，小明今年幾歲？", "a": 9, "s": "36 ÷ 4 = 9。" },
+            { "q": "果園裡有 312 棵蘋果樹，比梨樹少 145 棵，梨樹有多少棵？", "a": 457, "s": "312 + 145 = 457。" },
+            { "q": "一箱果汁有 24 瓶，買 4 箱共有多少瓶？", "a": 96, "s": "24 x 4 = 96。" },
+            { "q": "遊樂場有 45 個小朋友，每 6 人一組玩遊戲，可以分成幾組？還剩幾人？（答案填組數）", "a": 7, "s": "45 ÷ 6 = 7 ... 3。可分 7 組，剩 3 人。" },
+            { "q": "小方有 500 元，買故事書用去 132 元，買玩具用去 189 元，他還剩多少元？", "a": 179, "s": "500 - 132 - 189 = 179。" },
+            { "q": "一條長 48 公分的絲帶，每 7 公分剪一段，最多可以剪成幾段？", "a": 6, "s": "48 ÷ 7 = 6 ... 6。最多剪 6 段。" },
+            { "q": "小明有 8 張 7 元郵票，他一共花了多少錢買郵票？", "a": 56, "s": "7 x 8 = 56。" },
+            { "q": "書架上有三層書，第一層有 126 本，第二層有 187 本，第三層有 98 本，共有多少本？", "a": 411, "s": "126 + 187 + 98 = 411。" },
+            { "q": "停車場有 342 輛車，開走 156 輛後，又開進 78 輛，現在有多少輛？", "a": 264, "s": "342 - 156 + 78 = 264。" },
+            { "q": "一盒巧克力有 8 顆，小紅買了 3 盒，分給同學 15 顆後，還剩多少顆？", "a": 9, "s": "8 x 3 - 15 = 9。" },
+            { "q": "小明有 137 元，媽媽給他 284 元，他現在共有多少元？", "a": 421, "s": "137 + 284 = 421（連續進位加法）" },
+            { "q": "圖書館原有 642 本書，早上借出 58 本，下午又借出 29 本，剩多少本？", "a": 555, "s": "642 - 58 - 29 = 555（連續借位減法）" },
+            { "q": "一盒餅乾有 24 塊，大麟姨丈買了 3 盒，共有多少塊？", "a": 72, "s": "24 x 3 = 72（兩位數乘一位數）" },
+            { "q": "一條繩子長 48 公分，每 7 公分剪成一段，最多可以剪成幾段？", "a": 6, "s": "48 ÷ 7 = 6 餘 6（有餘數除法）" },
+            { "q": "小華排隊，從前面數是第 17 個，後面數是第 14 個，這排有多少人？", "a": 30, "s": "17 + 14 - 1 = 30（邏輯排隊問題）" },
+            { "q": "一根木頭剪 4 刀，每段長 9 公分，這根木頭原長多少公分？", "a": 45, "s": "剪 4 刀有 5 段，9 x 5 = 45（間隔問題）" },
+            { "q": "文具店有 412 支紅筆，藍筆比紅筆少 135 支，藍筆有多少支？", "a": 277, "s": "412 - 135 = 277（三位數減法）" },
+            { "q": "小麗買了 6 袋蘋果，每袋有 8 個，吃掉了 9 個後剩多少個？", "a": 39, "s": "6 x 8 - 9 = 39（乘減混合運算）" },
+            { "q": "爸爸今年 37 歲，比小明大 28 歲，3 年後小明幾歲？", "a": 12, "s": "37 - 28 + 3 = 12（逆向運算與年齡）" },
+            { "q": "花店有 156 朵玫瑰，百合比玫瑰多 87 朵，百合有多少朵？", "a": 243, "s": "156 + 87 = 243" },
+            { "q": "老師有 72 張貼紙，平均分給 8 個小朋友，每人分得幾張？", "a": 9, "s": "72 ÷ 8 = 9" },
+            { "q": "一箱果汁有 24 瓶，買 4 箱共有多少瓶？", "a": 96, "s": "24 x 4 = 96" },
+            { "q": "水果攤有 300 個橘子，賣掉 143 個，又進貨 78 個，剩多少？", "a": 235, "s": "300 - 143 + 78 = 235" },
+            { "q": "一條圍巾 249 元，一件外套比圍巾貴 365 元，外套多少錢？", "a": 614, "s": "249 + 365 = 614" },
+            { "q": "小強有 8 顆糖果，小勇的糖果是小強的 7 倍，小勇有幾顆？", "a": 56, "s": "8 x 7 = 56" },
+            { "q": "小美從 1 數到 50，一共數了多少個帶有數字 '7' 的數？", "a": 5, "s": "7, 17, 27, 37, 47 共 5 個" },
+            { "q": "一盒巧克力有 36 顆，平分給 5 人，每人拿 7 顆，還剩幾顆？", "a": 1, "s": "36 - (5 x 7) = 1" },
+            { "q": "水桶裡原有一些水，倒進 145 毫升後共有 412 毫升，原來有幾毫升？", "a": 267, "s": "412 - 145 = 267" },
+            { "q": "一個正方形公園，每邊種 8 棵樹（四個角都種），共要幾棵？", "a": 28, "s": "(8-1) x 4 = 28 或 8x4 - 4 = 28" },
+            { "q": "麵包店烤了 234 個餐包，菠蘿包比餐包多 112 個，菠蘿包有幾個？", "a": 346, "s": "234 + 112 = 346" },
+            { "q": "一隻青蛙爬 12 公尺深的井，白天爬 3 公尺，晚上滑下 1 公尺，幾天爬出？", "a": 6, "s": "第 5 天爬到 10m，第 6 天爬 3m 直接出井（邏輯題）" },
+            { "q": "小明有 32 塊積木，每 6 塊裝一盒，可以裝滿幾盒？", "a": 5, "s": "32 ÷ 6 = 5 ... 2" },
+            { "q": "一枝筆 18 元，買 4 枝要付多少元？", "a": 72, "s": "18 x 4 = 72" },
+            { "q": "小華今年 9 歲，爸爸的年齡比小華的 4 倍多 3 歲，爸爸幾歲？", "a": 39, "s": "9 x 4 + 3 = 39" },
+            { "q": "一條長繩剪 3 刀，每段長 12 公分，繩子原長多少公分？", "a": 48, "s": "12 x 4 = 48" },
+            { "q": "停車場有 124 輛車，開走 38 輛，又開進 56 輛，現在有幾輛？", "a": 142, "s": "124 - 38 + 56 = 142" },
+            { "q": "小紅有 152 張卡片，分給同學 67 張後，媽媽又給她 45 張，她現在有幾張？", "a": 130, "s": "152 - 67 + 45 = 130" },
+            { "q": "文具盒一個 48 元，小明付了 100 元，應找回多少元？", "a": 52, "s": "100 - 48 = 52" },
+            { "q": "一箱有 48 個梨子，平均分給 9 人，每人分得 5 個，剩幾個？", "a": 3, "s": "48 - (9 x 5) = 3" },
+            { "q": "一籃雞蛋有 24 個，吃了 1/3，還剩幾個？", "a": 16, "s": "24 ÷ 3 = 8, 24 - 8 = 16" },
+            { "q": "小明從家走到學校要 15 分鐘，他 7:45 出發，幾點幾分到校？(填分鐘數)", "a": 0, "s": "7:45 + 15分 = 8:00，填 0" },
+            { "q": "一本書有 120 頁，小紅每天看 8 頁，看了 9 天，還剩幾頁沒看？", "a": 48, "s": "120 - (8 x 9) = 48" },
+            { "q": "小狗有 4 隻腳，7 隻小狗和 3 隻小雞共有幾隻腳？", "a": 34, "s": "4x7 + 2x3 = 28+6 = 34" },
+            { "q": "圓桌坐 8 人，5 張圓桌可坐幾人？", "a": 40, "s": "8 x 5 = 40" },
+            { "q": "小力有 138 元，比小美多 49 元，兩人共有多少元？", "a": 227, "s": "138 + (138-49) = 227" },
+            { "q": "一打鉛筆有 12 支，6 打共有多少支？", "a": 72, "s": "12 x 6 = 72" },
+            { "q": "哥哥有 256 枚郵票，弟弟比哥哥少 89 枚，兩人共有幾枚？", "a": 423, "s": "256 + (256-89) = 423" },
+            { "q": "一桶油連桶重 15 公斤，用掉一半油後重 8 公斤，桶重幾公斤？", "a": 1, "s": "(15-8)x2 = 14(油重), 15-14 = 1" },
+            { "q": "三位數中，最小的數是多少？", "a": 100, "s": "100 是最小三位數" },
+            { "q": "9 乘以什麼數會得到 81？", "a": 9, "s": "81 ÷ 9 = 9" },
+            { "q": "一條路長 100 公尺，每隔 10 公尺種一棵樹(兩端都種)，共需幾棵？", "a": 11, "s": "100÷10 + 1 = 11" },
+            { "q": "小明有 3 個 50 元和 4 個 10 元，他共有多少錢？", "a": 190, "s": "3x50 + 4x10 = 190" },
+            { "q": "54 顆珠子，每 8 顆穿一串，最多穿幾串？", "a": 6, "s": "54 ÷ 8 = 6 ... 6" },
+            { "q": "小麗買了 3 瓶飲料，每瓶 18 元，付 100 元找回多少？", "a": 46, "s": "100 - (18x3) = 46" },
+            { "q": "時鐘走一圈，時針走幾大格？", "a": 12, "s": "時鐘有 12 大格" },
+            { "q": "一根長度 24 公分的鐵絲，圍成一個正方形，邊長是多少？", "a": 6, "s": "24 ÷ 4 = 6" },
+            { "q": "一個五邊形，每條邊長 7 公分，周長是多少？", "a": 35, "s": "7 x 5 = 35" },
+            { "q": "小華有 48 顆彈珠，給弟弟一半後，又買了 15 顆，現有幾顆？", "a": 39, "s": "48÷2 + 15 = 39" },
+            { "q": "籃子裡有 72 個蘋果，壞了 9 個，剩下的平分給 7 人，每人幾個？", "a": 9, "s": "(72-9) ÷ 7 = 9" },
+            { "q": "小明家到圖書館 450 公尺，來回一趟共走多少公尺？", "a": 900, "s": "450 + 450 = 900" },
+            { "q": "一箱餅乾 12 包，8 箱共有幾包？", "a": 96, "s": "12 x 8 = 96" },
+            { "q": "小美有 257 點積分，換禮物用掉 168 點，還剩幾點？", "a": 89, "s": "257 - 168 = 89" },
+            { "q": "一塊布長 98 公分，剪掉 39 公分，再剪掉 25 公分，還剩多少？", "a": 34, "s": "98 - 39 - 25 = 34" },
+            { "q": "6 個 7 相加是多少？", "a": 42, "s": "7 x 6 = 42" },
+            { "q": "每輛計程車限坐 4 人，23 人至少要幾輛車？", "a": 6, "s": "23 ÷ 4 = 5 ... 3，所以要 6 輛" },
+            { "q": "小強每天存 15 元，存了一個星期共多少元？", "a": 105, "s": "15 x 7 = 105" },
+            { "q": "水族箱有 45 條金魚，死掉 7 條，又買來 18 條，現有幾條？", "a": 56, "s": "45 - 7 + 18 = 56" },
+            { "q": "操場一圈 200 公尺，小明跑 3 圈是多少公尺？", "a": 600, "s": "200 x 3 = 600" },
+            { "q": "一個皮球 35 元，買 2 個付 100 元，找回多少？", "a": 30, "s": "100 - (35x2) = 30" },
+            { "q": "小勇有 126 張貼紙，小方比他多 48 張，兩人共有幾張？", "a": 300, "s": "126 + (126+48) = 300" },
+            { "q": "一盒蠟筆 24 色，5 盒共有幾色？", "a": 120, "s": "24 x 5 = 120" },
+            { "q": "一年有幾個月？", "a": 12, "s": "基本常識：12個月" },
+            { "q": "小明今年 7 歲，哥哥 12 歲，5 年後兩人相差幾歲？", "a": 5, "s": "年齡差不變：12 - 7 = 5" },
+            { "q": "一包糖果 50 顆，分給 6 人，每人 8 顆，剩幾顆？", "a": 2, "s": "50 - (6x8) = 2" },
+            { "q": "半小時是多少分鐘？", "a": 30, "s": "60 ÷ 2 = 30" },
+            { "q": "小紅買 4 本練習簿用 32 元，買 9 本要多少元？", "a": 72, "s": "32÷4=8(一本), 8x9 = 72" },
+            { "q": "一個三角形和一個四邊形共有幾條邊？", "a": 7, "s": "3 + 4 = 7" },
+            { "q": "500 減去多少等於 234？", "a": 266, "s": "500 - 234 = 266" },
+            { "q": "一隻蜜蜂 6 隻腳，8 隻蜜蜂幾隻腳？", "a": 48, "s": "6 x 8 = 48" },
+            { "q": "小明看書，今天從 20 頁看到 35 頁，共看了幾頁？", "a": 16, "s": "35 - 20 + 1 = 16" },
+            { "q": "一星期有 7 天，4 星期共有幾天？", "a": 28, "s": "7 x 4 = 28" },
+            { "q": "小華有 142 元，買玩具用去 85 元，還剩多少？", "a": 57, "s": "142 - 85 = 57" },
+            { "q": "一打雞蛋 12 個，買 3 打送 2 個，共有幾個？", "a": 38, "s": "12x3 + 2 = 38" },
+            { "q": "一條繩子對折再對折，量得長度是 5 公分，原長多少？", "a": 20, "s": "5 x 2 x 2 = 20" },
+            { "q": "24 小時等於幾天？", "a": 1, "s": "一天有 24 小時" },
+            { "q": "小英有 35 朵花，每 4 朵紮成一束，可以紮幾束？", "a": 8, "s": "35 ÷ 4 = 8 ... 3" },
+            { "q": "買 3 支冰棒 27 元，買 5 支多少元？", "a": 45, "s": "27÷3=9, 9x5=45" },
+            { "q": "小明有 85 顆彈珠，比小強少 15 顆，小強有幾顆？", "a": 100, "s": "85 + 15 = 100" },
+            { "q": "大象有 4 條腿，5 隻大象共有幾條腿？", "a": 20, "s": "4 x 5 = 20" },
+            { "q": "200 加上 300 再減 150 是多少？", "a": 350, "s": "200+300-150 = 350" },
+            { "q": "一個小時有幾秒？", "a": 3600, "s": "60 x 60 = 3600" },
+            { "q": "小明家養了 12 隻雞，鴨比雞多 8 隻，雞鴨共幾隻？", "a": 32, "s": "12 + (12+8) = 32" },
+            { "q": "10 個 10 元硬幣可以換成幾個 5 元硬幣？", "a": 20, "s": "100 ÷ 5 = 20" },
+            { "q": "小麗有 6 盒彩筆，每盒 12 支，共有幾支？", "a": 72, "s": "12 x 6 = 72" },
+            { "q": "一隻螃蟹 8 條腿，6 隻螃蟹幾條腿？", "a": 48, "s": "8 x 6 = 48" },
+            { "q": "小明從 1 數到 20，數了幾個 '2'？", "a": 3, "s": "2, 12, 20 共三個" },
+            { "q": "一個星期上學 5 天，4 個星期上學幾天？", "a": 20, "s": "5 x 4 = 20" },
+            { "q": "小華有 18 顆糖，分給 3 個朋友，每人分幾顆？", "a": 6, "s": "18 ÷ 3 = 6" },
+            { "q": "一籃草莓 48 個，吃掉一半，剩幾個？", "a": 24, "s": "48 ÷ 2 = 24" },
+            { "q": "小明買了一本 65 元的書，付 100 元找回多少？", "a": 35, "s": "100 - 65 = 35" },
+            { "q": "36 裡面有幾個 4？", "a": 9, "s": "36 ÷ 4 = 9" },
+            { "q": "一隻手 5 根手指，一家 4 口幾根手指？", "a": 40, "s": "5 x 2 x 4 = 40 (每人兩隻手)" },
+            { "q": "小華有 120 元，小明有 80 元，小華比小明多多少？", "a": 40, "s": "120 - 80 = 40" },
+            { "q": "24 乘以 2 是多少？", "a": 48, "s": "24 x 2 = 48" },
+            { "q": "一個月最多有幾個星期日？", "a": 5, "s": "常識邏輯" },
+            { "q": "小明有 50 元，買了兩支 15 元的筆，還剩多少？", "a": 20, "s": "50 - 15x2 = 20" },
+            { "q": "15 加上什麼數等於 40？", "a": 25, "s": "40 - 15 = 25" },
+            { "q": "一輛車 4 個輪子，8 輛車幾個輪子？", "a": 32, "s": "4 x 8 = 32" },
+            { "q": "小明有 14 顆糖，小紅有 10 顆，小明給小紅幾顆兩人一樣多？", "a": 2, "s": "(14-10) ÷ 2 = 2" }
+        ];
+
+        let questions = [];
+        let currentIdx = 0;
+        let score = 0;
+        let userAnswers = [];
+        let startTime, timerInterval;
+
+        function startQuiz() {
+            try {
+                // 隨機選 10 題
+                questions = questionDb.sort(() => 0.5 - Math.random()).slice(0, 10);
+
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+
+                startTimer();
+                showQuestion();
+            } catch (e) {
+                alert('無法載入題庫。');
+            }
+        }
+
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                let diff = Math.floor((Date.now() - startTime) / 1000);
+                let m = Math.floor(diff / 60).toString().padStart(2, '0');
+                let s = (diff % 60).toString().padStart(2, '0');
+                document.getElementById('timer').innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function showQuestion() {
+            document.getElementById('current-idx').innerText = currentIdx + 1;
+            document.getElementById('question-text').innerText = questions[currentIdx].q;
+            document.getElementById('answer-input').value = '';
+            document.getElementById('answer-input').focus();
+        }
+
+        function nextQuestion() {
+            const input = document.getElementById('answer-input');
+            if (input.value === "") return alert("請輸入答案");
+
+            userAnswers.push(Number(input.value));
+
+            if (currentIdx < 9) {
+                currentIdx++;
+                showQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        async function saveIncorrectAnswers() {
+            try {
+                const now = new Date();
+                const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                const promises = [];
+                questions.forEach((q, i) => {
+                    if (userAnswers[i] !== q.a) {
+                        promises.push(window.addDoc(window.collection(window.db, "incorrect-log"), {
+                            question: q.q,
+                            correctAnswer: q.a,
+                            studentAnswer: userAnswers[i],
+                            timestamp: timestamp
+                        }));
+                    }
+                });
+                await Promise.all(promises);
+            } catch (e) {
+                console.error('儲存失敗:', e);
+            }
+        }
+
+        function finishQuiz() {
+            clearInterval(timerInterval);
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('total-time').innerText = "總耗時: " + document.getElementById('timer').innerText;
+
+            const list = document.getElementById('result-list');
+            questions.forEach((q, i) => {
+                const isCorrect = userAnswers[i] === q.a;
+                if (isCorrect) score++;
+                const item = document.createElement('div');
+                item.className = `p-4 border-l-8 rounded shadow-sm ${isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`;
+                item.innerHTML = `
+                    <p class="font-bold">${i + 1}. ${isCorrect ? '✅' : '❌'} ${q.q}</p>
+                    <p class="text-sm mt-2 text-gray-600">你的答案: ${userAnswers[i]} | 正確答案: ${q.a}</p>
+                    <p class="text-sm font-bold text-blue-600">詳解: ${q.s}</p>
+                `;
+                list.appendChild(item);
+            });
+
+            saveIncorrectAnswers();
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            saveAttendance(elapsed);
+        }
+
+        async function saveAttendance(elapsed) {
+            try {
+                const now = new Date();
+                const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                await window.addDoc(window.collection(window.db, "test-log"), {
+                    test: "加減乘除應用題",
+                    timespend: Math.floor(elapsed / 60) + "分" + (elapsed % 60) + "秒",
+                    timestamp: timestamp
+                });
+            } catch (e) {
+                console.error('儲存出席失敗:', e);
+            }
+        }
+
+        // support Enter
+        document.getElementById('answer-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') nextQuestion();
+        });
+
+        // expose for onclick handlers
+        window.startQuiz = startQuiz;
+        window.nextQuestion = nextQuestion;
+    </script>
+</body>
+
+</html>
