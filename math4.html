@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>三則運算挑戰</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+
+        body {
+            background-color: #f0f9ff;
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: manipulation;
+        }
+
+        .ipad-card {
+            background: white;
+            border-radius: 2.5rem;
+            box-shadow: 0 20px 50px rgba(37, 99, 235, 0.1);
+            width: 95vw;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 2.5rem;
+        }
+
+        .giant-text {
+            font-size: 4rem;
+            font-weight: 800;
+            color: #1e40af;
+            letter-spacing: -2px;
+        }
+
+        input[type=number]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4 relative">
+    <a href="index.html"
+        class="absolute top-4 left-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full transition-colors shadow-lg">←
+        返回</a>
+
+    <div id="app" class="ipad-card text-center border-4 border-blue-100">
+        <div id="setup-view">
+            <div class="mb-6">
+                <span class="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold tracking-widest">3 TERMS</span>
+            </div>
+            <h1 class="text-5xl font-black text-blue-900 mb-4">三則運算挑戰</h1>
+            <p class="text-blue-700/70 mb-10 text-xl font-medium">隨機 10 題三則運算（加、減混合）</p>
+            <button onclick="startQuiz()"
+                class="w-full py-8 bg-blue-600 text-white rounded-3xl text-3xl font-bold shadow-xl active:scale-95 transition-all">
+                開始練習 (10題)
+            </button>
+        </div>
+
+        <div id="quiz-view" class="hidden">
+            <div class="flex justify-between items-end mb-10 border-b border-blue-100 pb-6">
+                <div class="text-left">
+                    <p class="text-blue-400 font-bold text-xs uppercase">Progress</p>
+                    <p class="text-3xl font-black text-blue-900"><span id="current-num">1</span> <span
+                            class="text-blue-200 text-xl">/ 10</span></p>
+                </div>
+                <div class="text-right">
+                    <p id="timer-display" class="text-3xl font-black text-blue-600 font-mono">00分00秒</p>
+                </div>
+            </div>
+
+            <div id="question-text" class="giant-text mb-12 min-h-[160px] flex items-center justify-center"></div>
+
+            <input type="number" id="answer-input"
+                class="w-full text-7xl text-center border-b-8 border-blue-400 outline-none pb-4 text-blue-600 font-black bg-transparent"
+                placeholder="?">
+
+            <button onclick="checkAndNext()"
+                class="w-full mt-10 py-8 bg-blue-900 text-white rounded-3xl text-4xl font-bold shadow-lg">確認</button>
+        </div>
+
+        <div id="result-view" class="hidden text-left">
+            <h2 class="text-5xl font-black text-blue-600 mb-6 text-center">挑戰成功！</h2>
+            <p id="final-time-text" class="text-center text-xl font-bold text-slate-600 mb-8"></p>
+            <div id="results-list" class="space-y-4 max-h-[45vh] overflow-y-auto mb-8 p-6 bg-blue-50 rounded-[2rem]">
+            </div>
+            <button onclick="location.reload()"
+                class="w-full py-6 bg-blue-600 text-white rounded-3xl text-2xl font-bold">重新挑戰</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDX-775T11BjNbJ6pyJ8aHfiy1mnieodA4",
+            projectId: "p2math-791c8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let questions = [], currentIdx = 0, userAnswers = [];
+        let startTime, timerInterval;
+
+        // Generate a 3-term arithmetic question: x +/- y +/- z
+        // Constraints: 0 < x,y,z <= 1000, answer >= 0
+        function generateQuestions() {
+            const list = [];
+            for (let i = 0; i < 10; i++) {
+                // Pick operation types: 0=+, 1=-
+                // 4 patterns: + +, - -, + -, - +
+                const patterns = [
+                    [0, 0],   // x + y + z
+                    [1, 1],   // x - y - z  (ensure x >= y+z)
+                    [0, 1],   // x + y - z
+                    [1, 0],   // x - y + z  (ensure x + z >= y, i.e. answer >= 0)
+                ];
+                const pattern = patterns[Math.floor(Math.random() * 4)];
+
+                let x, y, z, answer;
+                let attempts = 0;
+
+                do {
+                    x = Math.floor(Math.random() * 999) + 1;  // 1-999
+                    y = Math.floor(Math.random() * 999) + 1;
+                    z = Math.floor(Math.random() * 999) + 1;
+                    attempts++;
+                } while (attempts < 50 && (
+                    (pattern[0] === 1 && pattern[1] === 1 && x < y + z) ||
+                    (pattern[0] === 1 && pattern[1] === 0 && x + z < y) ||
+                    (pattern[0] === 0 && pattern[1] === 1 && x + y < z)
+                ));
+
+                if (pattern[0] === 0 && pattern[1] === 0) {
+                    answer = x + y + z;
+                } else if (pattern[0] === 1 && pattern[1] === 1) {
+                    answer = x - y - z;
+                } else if (pattern[0] === 0 && pattern[1] === 1) {
+                    answer = x + y - z;
+                } else {
+                    answer = x - y + z;
+                }
+
+                const op1 = pattern[0] === 0 ? " + " : " - ";
+                const op2 = pattern[1] === 0 ? " + " : " - ";
+                const q = `${x}${op1}${y}${op2}${z} = ?`;
+
+                list.push({ q, a: answer, s: q.replace(" = ?", ` = ${answer}`) });
+            }
+            return list;
+        }
+
+        async function saveIncorrectAnswers(questions, userAnswers) {
+            try {
+                const now = new Date();
+                const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                const promises = [];
+                questions.forEach((q, i) => {
+                    if (userAnswers[i] !== q.a) {
+                        promises.push(addDoc(collection(db, "incorrect-log"), {
+                            question: q.q,
+                            correctAnswer: q.a,
+                            studentAnswer: userAnswers[i],
+                            timestamp: timestamp
+                        }));
+                    }
+                });
+                await Promise.all(promises);
+            } catch (e) {
+                console.error("Firebase save error:", e);
+            }
+        }
+
+        async function saveAttendance(totalSeconds) {
+            try {
+                const now = new Date();
+                const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                await addDoc(collection(db, "test-log"), {
+                    test: "三則運算挑戰",
+                    timespend: Math.floor(totalSeconds / 60) + "分" + (totalSeconds % 60) + "秒",
+                    timestamp: timestamp
+                });
+            } catch (e) {
+                console.error("Firebase save error:", e);
+            }
+        }
+
+        function startQuiz() {
+            questions = generateQuestions();
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+            showQuestion();
+        }
+
+        function updateTimer() {
+            let seconds = Math.floor((Date.now() - startTime) / 1000);
+            let m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            let s = (seconds % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${m}分${s}秒`;
+        }
+
+        function showQuestion() {
+            document.getElementById('current-num').innerText = currentIdx + 1;
+            document.getElementById('question-text').innerText = questions[currentIdx].q;
+            document.getElementById('answer-input').value = '';
+            document.getElementById('answer-input').focus();
+        }
+
+        function checkAndNext() {
+            const input = document.getElementById('answer-input').value;
+            if (!input) return;
+            userAnswers.push(Number(input));
+            if (currentIdx < questions.length - 1) {
+                currentIdx++;
+                showQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            clearInterval(timerInterval);
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.remove('hidden');
+            document.getElementById('final-time-text').innerText = "完成時間：" + document.getElementById('timer-display').innerText;
+            const list = document.getElementById('results-list');
+            let score = 0;
+            questions.forEach((q, i) => {
+                const isCorrect = userAnswers[i] === q.a;
+                if (isCorrect) score++;
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-4 border-b border-blue-100 last:border-0">
+                        <span class="text-xl font-bold ${isCorrect ? 'text-green-600' : 'text-red-500'}">
+                            ${i + 1}. ${isCorrect ? '✅' : '❌'} ${q.s}
+                        </span>
+                        <span class="text-slate-500">答案: ${userAnswers[i]}</span>
+                    </div>
+                `;
+            });
+            const seconds = Math.floor((Date.now() - startTime) / 1000);
+            saveIncorrectAnswers(questions, userAnswers);
+            saveAttendance(seconds);
+        }
+
+        document.getElementById('answer-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAndNext();
+        });
+
+        // expose for onclick handlers
+        window.startQuiz = startQuiz;
+        window.checkAndNext = checkAndNext;
+    </script>
+</body>
+
+</html>
