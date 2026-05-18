@@ -39,19 +39,13 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDX-775T11BjNbJ6pyJ8aHfiy1mnieodA4",
-            authDomain: "p2math-791c8.firebaseapp.com",
-            projectId: "p2math-791c8"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
+        import { getCookie } from './auth.js';
+        
+        // Skip auto modal for logs but check user
+        window.skipAuth = true; 
+        
         let currentTab = 'test-log';
+        let currentUsername = getCookie("math_username") || "";
 
         window.switchTab = function(tab) {
             currentTab = tab;
@@ -65,18 +59,24 @@
         };
 
         window.loadLogs = async function() {
+            if (!currentUsername) {
+                document.getElementById('log-list').innerHTML = '<p class="text-gray-500 text-center">請先登入以查看記錄</p>';
+                return;
+            }
+
             const list = document.getElementById('log-list');
             const empty = document.getElementById('empty');
             list.innerHTML = '<p class="text-gray-500 text-center">載入中...</p>';
             empty.classList.add('hidden');
 
             try {
-                const q = query(
-                    collection(db, currentTab),
-                    orderBy("timestamp", "desc"),
-                    limit(100)
+                const q = window.query(
+                    window.collection(window.db, currentTab),
+                    window.where("username", "==", currentUsername),
+                    window.orderBy("timestamp", "desc"),
+                    window.limit(100)
                 );
-                const snapshot = await getDocs(q);
+                const snapshot = await window.getDocs(q);
 
                 if (snapshot.empty) {
                     list.innerHTML = '';
