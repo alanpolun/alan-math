@@ -6,21 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>乘除應用題</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDX-775T11BjNbJ6pyJ8aHfiy1mnieodA4",
-            projectId: "p2math-791c8"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        window.db = db;
-        window.addDoc = addDoc;
-        window.collection = collection; // expose for non-module scripts
-    </script>
+    <script type="module" src="auth.js"></script>
     <style>
         body {
             background-color: #f0f9ff;
@@ -337,10 +323,12 @@
                 const now = new Date();
                 const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
                 const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                const username = window.getUsername();
                 const promises = [];
                 questions.forEach((q, i) => {
                     if (userAnswers[i] !== q.a) {
                         promises.push(window.addDoc(window.collection(window.db, "incorrect-log"), {
+                            username: username,
                             question: q.q,
                             correctAnswer: q.a,
                             studentAnswer: userAnswers[i],
@@ -384,7 +372,9 @@
                 const now = new Date();
                 const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
                 const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                const username = window.getUsername();
                 await window.addDoc(window.collection(window.db, "test-log"), {
+                    username: username,
                     test: "加減乘除應用題",
                     timespend: Math.floor(elapsed / 60) + "分" + (elapsed % 60) + "秒",
                     timestamp: timestamp

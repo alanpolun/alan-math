@@ -91,6 +91,139 @@
     </div>
 
     
+    <script>
+        let questions = [], currentIdx = 0, userAnswers = [];
+        let startTime, timerInterval;
+
+        window.onUserSet = () => {
+             // startQuiz() depends on button click usually, 
+             // but if we are already logged in we just wait for the button.
+        };
+
+        async function saveIncorrectAnswers(questions, userAnswers) {
+            try {
+                const now = new Date();
+                const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                const promises = [];
+                questions.forEach((q, i) => {
+                    if (userAnswers[i] !== q.a) {
+                        promises.push(window.addDoc(window.collection(window.db, "incorrect-log"), {
+                            username: window.getUsername(),
+                            question: q.q,
+                            correctAnswer: q.a,
+                            studentAnswer: userAnswers[i],
+                            timestamp: timestamp
+                        }));
+                    }
+                });
+                await Promise.all(promises);
+            } catch (error) {
+                console.error('Error saving incorrect answers:', error);
+            }
+        }
+
+        async function saveAttendance(totalTime) {
+            try {
+                const now = new Date();
+                const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                await window.addDoc(window.collection(window.db, "test-log"), {
+                    username: window.getUsername(),
+                    test: "連續借位減法挑戰",
+                    timespend: Math.floor(totalTime / 60) + "分" + (totalTime % 60) + "秒",
+                    timestamp: timestamp
+                });
+            } catch (error) {
+                console.error('Error saving attendance:', error);
+            }
+        }
+
+        function generateQuestions() {
+            const list = [];
+            for (let i = 0; i < 10; i++) {
+                let a, b;
+                if (i < 4) {
+                    const base = Math.floor(Math.random() * 8) + 1; 
+                    const lastDigit = Math.floor(Math.random() * 9) + 1; 
+                    a = (base * 1000) + lastDigit; 
+                    b = Math.floor(Math.random() * (a - 200)) + 150;
+                    if ((b % 10) <= (a % 10)) b += 5;
+                } else {
+                    a = Math.floor(Math.random() * 9000) + 100;
+                    b = Math.floor(Math.random() * (a - 20)) + 11;
+                }
+                if (b < 10) b += 10;
+                if (b >= a) { a += 1000; }
+                list.push({ q: `${a} - ${b} = ?`, a: a - b, display: `${a} - ${b} = ${a - b}` });
+            }
+            return list.sort(() => Math.random() - 0.5);
+        }
+
+        function startQuiz() {
+            questions = generateQuestions();
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+            showQuestion();
+        }
+
+        function updateTimer() {
+            let seconds = Math.floor((Date.now() - startTime) / 1000);
+            let m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            let s = (seconds % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${m}分${s}秒`;
+        }
+
+        function showQuestion() {
+            document.getElementById('current-num').innerText = currentIdx + 1;
+            document.getElementById('question-text').innerText = questions[currentIdx].q;
+            document.getElementById('answer-input').value = '';
+            document.getElementById('answer-input').focus();
+        }
+
+        function checkAndNext() {
+            const input = document.getElementById('answer-input').value;
+            if (!input) return;
+            userAnswers.push(Number(input));
+            if (currentIdx < questions.length - 1) {
+                currentIdx++;
+                showQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            clearInterval(timerInterval);
+            const totalTime = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.remove('hidden');
+            document.getElementById('final-time-text').innerText = "完成時間：" + document.getElementById('timer-display').innerText;
+            const list = document.getElementById('results-list');
+            questions.forEach((q, i) => {
+                const isCorrect = userAnswers[i] === q.a;
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-4 border-b border-pink-100 last:border-0">
+                        <span class="text-xl font-bold ${isCorrect ? 'text-green-600' : 'text-red-500'}">
+                            ${i + 1}. ${isCorrect ? '✅' : '❌'} ${q.display}
+                        </span>
+                        <span class="text-slate-500">答案: ${userAnswers[i]}</span>
+                    </div>
+                `;
+            });
+            saveIncorrectAnswers(questions, userAnswers);
+            saveAttendance(totalTime);
+        }
+
+        document.getElementById('answer-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAndNext();
+        });
+
+        window.startQuiz = startQuiz;
+        window.checkAndNext = checkAndNext;
+    </script>
 </body>
 
 </html>

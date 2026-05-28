@@ -6,21 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小二數學：300題全能乘除挑戰</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-        const firebaseConfig = {
-            apiKey: "AIzaSy...odA4",
-            projectId: "p2math-791c8"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        window.db = db;
-        window.addDoc = addDoc;
-        window.collection = collection;
-    </script>
+    <script type="module" src="auth.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
 
@@ -1672,10 +1658,12 @@
                 const now = new Date();
                 const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
                 const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                const username = window.getUsername();
                 const promises = [];
                 selectedQuestions.forEach((q, i) => {
                     if (userAnswers[i] !== q.a) {
                         promises.push(window.addDoc(window.collection(window.db, "incorrect-log"), {
+                            username: username,
                             question: q.q,
                             correctAnswer: q.a,
                             studentAnswer: userAnswers[i],
@@ -1694,7 +1682,9 @@
                 const now = new Date();
                 const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
                 const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                const username = window.getUsername();
                 await window.addDoc(window.collection(window.db, "test-log"), {
+                    username: username,
                     test: "300題全能乘除挑戰",
                     timespend: Math.floor(elapsed / 60) + "分" + (elapsed % 60) + "秒",
                     timestamp: timestamp

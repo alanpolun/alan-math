@@ -90,6 +90,156 @@
     </div>
 
     
+    <script>
+        let questions = [], currentIdx = 0, userAnswers = [];
+        let startTime, timerInterval;
+
+        window.onUserSet = () => {
+        };
+
+        async function saveIncorrectAnswers(questions, userAnswers) {
+            try {
+                const now = new Date();
+                const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                const promises = [];
+                questions.forEach((q, i) => {
+                    if (userAnswers[i] !== q.a) {
+                        promises.push(window.addDoc(window.collection(window.db, "incorrect-log"), {
+                            username: window.getUsername(),
+                            question: q.q,
+                            correctAnswer: q.a,
+                            studentAnswer: userAnswers[i],
+                            timestamp: timestamp
+                        }));
+                    }
+                });
+                await Promise.all(promises);
+            } catch (error) {
+                console.error('Error saving incorrect answers:', error);
+            }
+        }
+
+        async function saveAttendance(totalTime) {
+            try {
+                const now = new Date();
+                const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                await window.addDoc(window.collection(window.db, "test-log"), {
+                    username: window.getUsername(),
+                    test: "三則運算挑戰",
+                    timespend: Math.floor(totalTime / 60) + "分" + (totalTime % 60) + "秒",
+                    timestamp: timestamp
+                });
+            } catch (error) {
+                console.error('Error saving attendance:', error);
+            }
+        }
+
+        function generateQuestions() {
+            const list = [];
+            for (let i = 0; i < 10; i++) {
+                const a = Math.floor(Math.random() * 80) + 20;
+                const b = Math.floor(Math.random() * 50) + 5;
+                const c = Math.floor(Math.random() * 30) + 5;
+                
+                let temp, op1, q1;
+                if (Math.random() > 0.5) {
+                    temp = a + b;
+                    op1 = '+';
+                } else {
+                    temp = a - b;
+                    op1 = '-';
+                    if (temp < 0) {
+                        temp = a + b;
+                        op1 = '+';
+                    }
+                }
+                q1 = `${a} ${op1} ${b}`;
+
+                let result, op2, q2;
+                if (Math.random() > 0.5) {
+                    result = temp + c;
+                    op2 = '+';
+                } else {
+                    result = temp - c;
+                    op2 = '-';
+                    if (result < 0) {
+                        result = temp + c;
+                        op2 = '+';
+                    }
+                }
+                q2 = `${q1} ${op2} ${c}`;
+                
+                list.push({ q: `${q2} = ?`, a: result, display: `${q2} = ${result}` });
+            }
+            return list;
+        }
+
+        function startQuiz() {
+            questions = generateQuestions();
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+            showQuestion();
+        }
+
+        function updateTimer() {
+            let seconds = Math.floor((Date.now() - startTime) / 1000);
+            let m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            let s = (seconds % 60).toString().padStart(2, '0');
+            document.getElementById('timer-display').innerText = `${m}分${s}秒`;
+        }
+
+        function showQuestion() {
+            document.getElementById('current-num').innerText = currentIdx + 1;
+            document.getElementById('question-text').innerText = questions[currentIdx].q;
+            document.getElementById('answer-input').value = '';
+            document.getElementById('answer-input').focus();
+        }
+
+        function checkAndNext() {
+            const input = document.getElementById('answer-input').value;
+            if (!input) return;
+            userAnswers.push(Number(input));
+            if (currentIdx < questions.length - 1) {
+                currentIdx++;
+                showQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            clearInterval(timerInterval);
+            const totalTime = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.remove('hidden');
+            document.getElementById('final-time-text').innerText = "完成時間：" + document.getElementById('timer-display').innerText;
+            const list = document.getElementById('results-list');
+            questions.forEach((q, i) => {
+                const isCorrect = userAnswers[i] === q.a;
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-4 border-b border-blue-100 last:border-0">
+                        <span class="text-xl font-bold ${isCorrect ? 'text-green-600' : 'text-red-500'}">
+                            ${i + 1}. ${isCorrect ? '✅' : '❌'} ${q.display}
+                        </span>
+                        <span class="text-slate-500">答案: ${userAnswers[i]}</span>
+                    </div>
+                `;
+            });
+            saveIncorrectAnswers(questions, userAnswers);
+            saveAttendance(totalTime);
+        }
+
+        document.getElementById('answer-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAndNext();
+        });
+
+        window.startQuiz = startQuiz;
+        window.checkAndNext = checkAndNext;
+    </script>
 </body>
 
 </html>

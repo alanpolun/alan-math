@@ -13,7 +13,7 @@
             <div class="flex items-center gap-4">
                 <a href="index.html"
                    class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-full transition-all hover:scale-105">
-                    ← Go back
+                    ← 返回首頁
                 </a>
                 <h1 class="text-3xl font-bold text-indigo-600">學習記錄</h1>
             </div>
@@ -42,10 +42,15 @@
         import { getCookie } from './auth.js';
         
         // Skip auto modal for logs but check user
-        window.skipAuth = true; 
+        window.skipAuthInit = false; // We want researchers/students to see the login if not set
         
         let currentTab = 'test-log';
         let currentUsername = getCookie("math_username") || "";
+
+        window.onUserSet = (username) => {
+            currentUsername = username;
+            loadLogs();
+        };
 
         window.switchTab = function(tab) {
             currentTab = tab;
@@ -70,10 +75,15 @@
             empty.classList.add('hidden');
 
             try {
+                // Ensure auth.js has initialized window.db
+                if (!window.db) {
+                     setTimeout(loadLogs, 500);
+                     return;
+                }
+
                 const q = window.query(
                     window.collection(window.db, currentTab),
                     window.where("username", "==", currentUsername),
-                    window.orderBy("timestamp", "desc"),
                     window.limit(100)
                 );
                 const snapshot = await window.getDocs(q);
@@ -84,15 +94,23 @@
                     return;
                 }
 
+                // Sort client-side to avoid composite index requirement
+                let docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                docs.sort((a, b) => {
+                    const timeA = a.timestamp || "";
+                    const timeB = b.timestamp || "";
+                    return timeB.localeCompare(timeA);
+                });
+
                 empty.classList.add('hidden');
                 list.innerHTML = '';
 
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
+                docs.forEach((data) => {
+                    const id = data.id;
                     if (currentTab === 'test-log') {
-                        renderTestLog(list, doc.id, data);
+                        renderTestLog(list, id, data);
                     } else {
-                        renderIncorrectLog(list, doc.id, data);
+                        renderIncorrectLog(list, id, data);
                     }
                 });
             } catch (e) {
