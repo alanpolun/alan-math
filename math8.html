@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 星際數學大冒險 - 三位數乘一位數(進位特訓)</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #FFD166;
+            --success: #06D6A0;
+            --danger: #EF476F;
+            --dark: #073B4C;
+            --bg: #F8F9FA;
+            --carry: #E63946;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border: 4px solid var(--primary);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px #E1F5FE;
+        }
+
+        .intro-box {
+            background-color: #E3F2FD;
+            padding: 15px 20px;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            border-left: 6px solid var(--primary);
+        }
+
+        /* 數學直式風格 */
+        .demo-section {
+            background: #FFF9E6;
+            border: 3px dashed #FFB703;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .control-panel {
+            margin-bottom: 20px;
+        }
+
+        .math-table {
+            font-size: 2.5rem;
+            margin: 20px auto;
+            border-collapse: collapse;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        /* 模擬方格紙：5個直欄 (符號, 千, 百, 十, 個) */
+        .math-table td {
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            vertical-align: middle;
+            padding: 2px;
+            position: relative;
+        }
+
+        /* 進位數字專用列 */
+        .row-carry td {
+            height: 30px; /* 進位列比較矮 */
+            font-size: 1.2rem;
+            color: var(--carry);
+            vertical-align: bottom;
+        }
+
+        .border-bottom td {
+            border-bottom: 4px solid var(--dark);
+        }
+
+        .step-text {
+            font-size: 1.25rem;
+            color: #333;
+            min-height: 100px;
+            font-weight: bold;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-orange { background-color: #FB8500; }
+        .btn-purple { background-color: #8A2BE2; }
+
+        /* 動態高亮顏色 */
+        .hl-active { background-color: #FFF59D; border-radius: 8px; color: var(--dark); padding: 2px 5px; box-shadow: 0 0 5px #FBC02D;}
+        .hl-result { color: var(--success); font-size: 2.8rem; }
+        .hidden { visibility: hidden; }
+        .visible { visibility: visible; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 星際數學大冒險 - 進位特訓班</h1>
+    
+    <div class="intro-box">
+        親愛的小探險家！當我們遇到數字變大時，就需要用到<b>「進位魔法」</b>。記住口訣：<b>先乘積，再把頭頂上的進位加起來！</b>
+    </div>
+
+    <div class="demo-section">
+        <h2>🎬 動態進位演練</h2>
+        
+        <div class="control-panel">
+            <button class="btn btn-purple" onclick="generateNewDemo()">🎲 換一題全新隨機數</button>
+        </div>
+        
+        <table class="math-table">
+            <tr id="row-carry" class="row-carry">
+                <td></td>
+                <td id="c-thou"></td>
+                <td id="c-hun"></td>
+                <td id="c-ten"></td>
+                <td></td>
+            </tr>
+            <tr id="row-num1">
+                <td></td>
+                <td></td>
+                <td id="n1-hun"></td>
+                <td id="n1-ten"></td>
+                <td id="n1-ones"></td>
+            </tr>
+            <tr id="row-num2" class="border-bottom">
+                <td>×</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td id="n2-ones"></td>
+            </tr>
+            <tr id="row-result">
+                <td>=</td>
+                <td id="res-thou" class="hidden"></td>
+                <td id="res-hun" class="hidden"></td>
+                <td id="res-ten" class="hidden"></td>
+                <td id="res-ones" class="hidden"></td>
+            </tr>
+        </table>
+
+        <div id="step-msg" class="step-text">載入中...</div>
+        
+        <button id="next-btn" class="btn btn-orange" onclick="nextStep()">下一步 ➡️</button>
+        <button id="reset-btn" class="btn" onclick="resetDemo()" style="background-color:#666; display:none;">重頭看一次 ↩️</button>
+    </div>
+</div>
+
+<script>
+    // 變數儲存
+    let n1, n2;
+    let d1, d2, d3; // d1=個位, d2=十位, d3=百位
+    let currentStep = 0;
+    
+    // 儲存每步計算結果與進位
+    let step1_prod, step1_write, step1_carry;
+    let step2_prod, step2_total, step2_write, step2_carry;
+    let step3_prod, step3_total, step3_write, step3_carry;
+
+    // 隨機數生成 (刻意挑選容易產生進位的數字組合)
+    function getRandomForCarry(min, max) {
+        let num;
+        do {
+            num = Math.floor(Math.random() * (max - min + 1)) + min;
+        } while (num % 5 === 0 || num % 10 === 0);
+        return num;
+    }
+
+    function generateNewDemo() {
+        // 為了確保有進位演示，被乘數設為 200~999，乘數 4~9
+        n1 = getRandomForCarry(267, 989); 
+        n2 = getRandomForCarry(4, 9);
+        
+        // 分解三位數
+        d1 = n1 % 10;                     // 個位
+        d2 = Math.floor((n1 % 100) / 10); // 十位
+        d3 = Math.floor(n1 / 100);        // 百位
+
+        // 預先計算所有步驟的數值
+        // 第一步：個位
+        step1_prod = d1 * n2;
+        step1_write = step1_prod % 10;
+        step1_carry = Math.floor(step1_prod / 10);
+
+        // 第二步：十位
+        step2_prod = d2 * n2;
+        step2_total = step2_prod + step1_carry;
+        step2_write = step2_total % 10;
+        step2_carry = Math.floor(step2_total / 10);
+
+        // 第三步：百位
+        step3_prod = d3 * n2;
+        step3_total = step3_prod + step2_carry;
+        step3_write = step3_total % 10;
+        step3_carry = Math.floor(step3_total / 10);
+
+        // 填入初始數字
+        document.getElementById('n1-ones').innerText = d1;
+        document.getElementById('n1-ten').innerText = d2;
+        document.getElementById('n1-hun').innerText = d3;
+        document.getElementById('n2-ones').innerText = n2;
+
+        resetDemo();
+    }
+
+    function clearHighlights() {
+        document.getElementById('n1-ones').className = '';
+        document.getElementById('n1-ten').className = '';
+        document.getElementById('n1-hun').className = '';
+        document.getElementById('n2-ones').className = '';
+        document.getElementById('c-ten').className = '';
+        document.getElementById('c-hun').className = '';
+    }
+
+    function resetDemo() {
+        currentStep = 0;
+        clearHighlights();
+        
+        // 隱藏所有進位與結果
+        const hideElements = ['c-ten', 'c-hun', 'c-thou', 'res-ones', 'res-ten', 'res-hun', 'res-thou'];
+        hideElements.forEach(id => {
+            let el = document.getElementById(id);
+            el.innerText = '';
+            el.className = 'hidden';
+        });
+
+        document.getElementById('step-msg').innerHTML = `🎯 <b>新任務已準備好：</b> 請計算 <span style="font-size:1.5rem; color:var(--primary);">${n1} × ${n2}</span>。<br>點擊「下一步」按鈕，看看進位魔法怎麼運作！`;
+        document.getElementById('next-btn').style.display = 'inline-block';
+        document.getElementById('reset-btn').style.display = 'none';
+    }
+
+    function nextStep() {
+        currentStep++;
+        const msgBox = document.getElementById('step-msg');
+        clearHighlights();
+        document.getElementById('n2-ones').className = 'hl-active'; // 乘數永遠高亮
+        
+        if (currentStep === 1) {
+            // 處理個位
+            document.getElementById('n1-ones').className = 'hl-active';
+            
+            let resEl = document.getElementById('res-ones');
+            resEl.innerText = step1_write;
+            resEl.className = 'visible hl-result';
+
+            let msg = `【第一步：個位】<br>先算個位： <b>${d1} × ${n2} = ${step1_prod}</b>。<br>在個位寫下 <b>${step1_write}</b>。`;
+            
+            if (step1_carry > 0) {
+                let carryEl = document.getElementById('c-ten');
+                carryEl.innerText = step1_carry;
+                carryEl.className = 'visible';
+                msg += `<br>🔴 滿十要進位！把 <b>${step1_carry}</b> 寫在十位的頭頂上。`;
+            }
+            msgBox.innerHTML = msg;
+
+        } else if (currentStep === 2) {
+            // 處理十位
+            document.getElementById('n1-ten').className = 'hl-active';
+            if(step1_carry > 0) document.getElementById('c-ten').className = 'hl-active';
+            
+            let resEl = document.getElementById('res-ten');
+            resEl.innerText = step2_write;
+            resEl.className = 'visible hl-result';
+
+            let msg = `【第二步：十位】<br>算十位： <b>${d2} × ${n2} = ${step2_prod}</b>。`;
+            
+            if (step1_carry > 0) {
+                msg += `<br>⚠️ <b>別忘了頭頂上的進位！</b> ${step2_prod} 加上進位的 ${step1_carry}，變成 <b>${step2_total}</b>。<br>在十位寫下 <b>${step2_write}</b>。`;
+            } else {
+                msg += `<br>在十位寫下 <b>${step2_write}</b>。`;
+            }
+
+            if (step2_carry > 0) {
+                let carryEl = document.getElementById('c-hun');
+                carryEl.innerText = step2_carry;
+                carryEl.className = 'visible';
+                msg += `<br>🔴 再次進位！把 <b>${step2_carry}</b> 寫在百位的頭頂上。`;
+            }
+            msgBox.innerHTML = msg;
+
+        } else if (currentStep === 3) {
+            // 處理百位
+            document.getElementById('n1-hun').className = 'hl-active';
+            if(step2_carry > 0) document.getElementById('c-hun').className = 'hl-active';
+            
+            let resHun = document.getElementById('res-hun');
+            resHun.innerText = step3_write;
+            resHun.className = 'visible hl-result';
+
+            let msg = `【第三步：百位】<br>算百位： <b>${d3} × ${n2} = ${step3_prod}</b>。`;
+
+            if (step2_carry > 0) {
+                msg += `<br>加上進位的 ${step2_carry}，變成 <b>${step3_total}</b>。`;
+            }
+
+            if (step3_carry > 0) {
+                let resThou = document.getElementById('res-thou');
+                resThou.innerText = step3_carry;
+                resThou.className = 'visible hl-result';
+                msg += `<br>因為前面沒有數字了，我們直接把 <b>${step3_carry}</b> 寫在千位！`;
+            }
+
+            msg += `<br>🎉 恭喜！最終答案是 <span style="color:var(--success); font-size:1.5rem;">${n1 * n2}</span>！`;
+            msgBox.innerHTML = msg;
+            
+            document.getElementById('next-btn').style.display = 'none';
+            document.getElementById('reset-btn').style.display = 'inline-block';
+        }
+    }
+
+    // 初始化
+    window.onload = function() {
+        generateNewDemo();
+    };
+</script>
+
+</body>
+</html>

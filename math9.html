@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 三位數乘兩位數 - 三步拆解特訓</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #FFD166;
+            --success: #06D6A0;
+            --danger: #EF476F;
+            --dark: #073B4C;
+            --bg: #F8F9FA;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border: 4px solid var(--primary);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px #E1F5FE;
+        }
+
+        .intro-box {
+            background-color: #E3F2FD;
+            padding: 15px 20px;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            border-left: 6px solid var(--primary);
+        }
+
+        .control-panel {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-purple { background-color: #8A2BE2; }
+        .btn-green { background-color: var(--success); margin-top: 15px;}
+
+        /* 練習題區樣式 */
+        .quiz-section {
+            background: #E8F5E9;
+            border: 3px solid var(--success);
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .quiz-card {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--secondary);
+        }
+
+        .quiz-q {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--dark);
+            margin-bottom: 15px;
+            border-bottom: 2px dashed #ccc;
+            padding-bottom: 10px;
+        }
+
+        .step-row {
+            display: flex;
+            align-items: center;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .step-label {
+            width: 250px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .step-ones { color: var(--danger); }
+        .step-tens { color: var(--primary); }
+        .step-total { color: var(--success); }
+
+        .quiz-input {
+            font-size: 1.3rem;
+            padding: 8px;
+            width: 120px;
+            text-align: center;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            margin-left: 10px;
+            transition: border-color 0.3s;
+        }
+
+        .quiz-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .input-correct {
+            border-color: var(--success);
+            background-color: #E8F5E9;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .input-wrong {
+            border-color: var(--danger);
+            background-color: #FFEBEE;
+        }
+
+        .feedback {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .feedback-success { background: #E8F5E9; color: var(--success); }
+        .feedback-error { background: #FFEBEE; color: var(--danger); }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 星際數學大冒險 - 三步拆解特訓</h1>
+    
+    <div class="intro-box">
+        親愛的小探險家！其實「三位數乘兩位數」一點都不難，它只是<b>三個簡單任務</b>組合在一起而已！<br>
+        跟著提示，一步一步把每一部分的答案找出來吧！
+    </div>
+
+    <div class="control-panel">
+        <button class="btn btn-purple" onclick="generateQuizzes()">🎲 產生 5 題全新任務</button>
+    </div>
+
+    <div class="quiz-section">
+        <div id="quiz-container">
+            </div>
+    </div>
+</div>
+
+<script>
+    // 儲存當前 5 題的正確答案資料
+    let currentQuizzes = [];
+
+    // 智能數字規避器：避開結尾為 0 或 5 的數字
+    function getRandomSmart(min, max) {
+        let num;
+        do {
+            num = Math.floor(Math.random() * (max - min + 1)) + min;
+        } while (num % 5 === 0 || num % 10 === 0);
+        return num;
+    }
+
+    // 產生 5 題全新測驗
+    function generateQuizzes() {
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = ''; // 清空舊題目
+        currentQuizzes = [];      // 清空舊答案
+
+        for (let i = 0; i < 5; i++) {
+            let n1 = getRandomSmart(111, 399); // 被乘數
+            let n2 = getRandomSmart(11, 49);   // 乘數
+            
+            let onesDigit = n2 % 10;
+            let tensDigit = Math.floor(n2 / 10);
+            let tensValue = tensDigit * 10;
+
+            // 計算正確答案
+            let ansPart1 = n1 * onesDigit;
+            let ansPart2 = n1 * tensValue;
+            let ansPart3 = ansPart1 + ansPart2;
+
+            currentQuizzes.push({
+                n1: n1,
+                n2: n2,
+                ones: onesDigit,
+                tensVal: tensValue,
+                ans1: ansPart1,
+                ans2: ansPart2,
+                ans3: ansPart3
+            });
+
+            // 產生 HTML 結構
+            const card = document.createElement('div');
+            card.className = 'quiz-card';
+            card.innerHTML = `
+                <div class="quiz-q">任務 ${i + 1}： 計算 ${n1} × ${n2}</div>
+                
+                <div class="step-row">
+                    <div class="step-label step-ones">第一部分 (${n1} × ${onesDigit}) =</div>
+                    <input type="number" id="q${i}-p1" class="quiz-input" placeholder="答案">
+                </div>
+                
+                <div class="step-row">
+                    <div class="step-label step-tens">第二部分 (${n1} × ${tensValue}) =</div>
+                    <input type="number" id="q${i}-p2" class="quiz-input" placeholder="答案">
+                </div>
+                
+                <div class="step-row">
+                    <div class="step-label step-total">第三部分 (兩數相加) =</div>
+                    <input type="number" id="q${i}-p3" class="quiz-input" placeholder="最終答案">
+                </div>
+
+                <button class="btn btn-green" onclick="checkAnswer(${i})">✨ 檢查這題 ✨</button>
+                <div id="fb-${i}" class="feedback"></div>
+            `;
+            container.appendChild(card);
+        }
+    }
+
+    // 檢查單一題目的三個輸入框
+    function checkAnswer(index) {
+        const qData = currentQuizzes[index];
+        
+        const in1 = document.getElementById(`q${index}-p1`);
+        const in2 = document.getElementById(`q${index}-p2`);
+        const in3 = document.getElementById(`q${index}-p3`);
+        const fb = document.getElementById(`fb-${index}`);
+        
+        const val1 = parseInt(in1.value);
+        const val2 = parseInt(in2.value);
+        const val3 = parseInt(in3.value);
+
+        let isP1Correct = (val1 === qData.ans1);
+        let isP2Correct = (val2 === qData.ans2);
+        let isP3Correct = (val3 === qData.ans3);
+
+        // 更新輸入框樣式
+        updateInputStyle(in1, isP1Correct, val1);
+        updateInputStyle(in2, isP2Correct, val2);
+        updateInputStyle(in3, isP3Correct, val3);
+
+        fb.style.display = 'block';
+
+        // 判斷並給予精準反饋
+        if (isNaN(val1) || isNaN(val2) || isNaN(val3)) {
+            fb.className = 'feedback feedback-error';
+            fb.innerHTML = "⚠️ 哎呀！有空格還沒填寫喔，請把三個部分都填滿再檢查！";
+        } else if (isP1Correct && isP2Correct && isP3Correct) {
+            fb.className = 'feedback feedback-success';
+            fb.innerHTML = "🎉 太完美了！三個步驟完全正確，你是直式拆解大師！";
+            // 鎖定輸入框
+            in1.disabled = true; in2.disabled = true; in3.disabled = true;
+        } else {
+            fb.className = 'feedback feedback-error';
+            let errorMsg = "❌ 有點小失誤喔：<br>";
+            if (!isP1Correct) errorMsg += "• 第一部分（個位乘法）算錯了。<br>";
+            if (!isP2Correct) errorMsg += "• 第二部分（十位乘法）算錯了。是不是忘記尾數要補 0 了？<br>";
+            if (isP1Correct && isP2Correct && !isP3Correct) errorMsg += "• 乘法都對了！但是最後「相加」的地方不小心加錯囉。<br>";
+            
+            fb.innerHTML = errorMsg + "再試著修改一下吧！";
+        }
+    }
+
+    // 輔助函數：更改輸入框顏色
+    function updateInputStyle(inputElement, isCorrect, value) {
+        if (isNaN(value)) {
+            inputElement.className = 'quiz-input';
+            return;
+        }
+        if (isCorrect) {
+            inputElement.className = 'quiz-input input-correct';
+        } else {
+            inputElement.className = 'quiz-input input-wrong';
+        }
+    }
+
+    // 網頁載入時自動產生第一批題目
+    window.onload = function() {
+        generateQuizzes();
+    };
+</script>
+
+</body>
+</html>
