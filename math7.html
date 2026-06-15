@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 三位數乘兩位數直式教學</title>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #FFD166;
+            --success: #06D6A0;
+            --danger: #EF476F;
+            --dark: #073B4C;
+            --bg: #F8F9FA;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            border: 4px solid var(--primary);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px #E1F5FE;
+        }
+
+        .intro-box {
+            background-color: #E3F2FD;
+            padding: 15px 20px;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            border-left: 6px solid var(--primary);
+        }
+
+        /* 方格紙數學直式風格 */
+        .demo-section {
+            background: #FFF9E6;
+            border: 3px dashed #FFB703;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .control-panel {
+            margin-bottom: 20px;
+        }
+
+        .math-table {
+            font-size: 2.5rem;
+            margin: 20px auto;
+            border-collapse: collapse;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        /* 模擬方格紙：6個直欄 (符號, 萬, 千, 百, 十, 個) */
+        .math-table td {
+            width: 55px;
+            height: 60px;
+            text-align: center;
+            vertical-align: middle;
+            padding: 2px;
+        }
+
+        .border-bottom td {
+            border-bottom: 4px solid var(--dark);
+        }
+
+        .step-text {
+            font-size: 1.25rem;
+            color: #333;
+            min-height: 80px;
+            font-weight: bold;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-orange {
+            background-color: #FB8500;
+        }
+
+        .btn-purple {
+            background-color: #8A2BE2;
+        }
+
+        /* 動態高亮顏色 */
+        .hl-ones {
+            color: var(--danger);
+            background-color: #FFCDD2;
+            border-radius: 8px;
+            padding: 2px 5px;
+        }
+
+        .hl-tens {
+            color: var(--primary);
+            background-color: #BBDEFB;
+            border-radius: 8px;
+            padding: 2px 5px;
+        }
+
+        .hl-zero {
+            color: #888;
+            background-color: #E0E0E0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .hidden {
+            visibility: hidden;
+        }
+
+        .visible {
+            visibility: visible;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>🚀 星際數學大冒險</h1>
+
+        <div class="intro-box">
+            親愛的小小探險家！寫直式的時候，<b>個位一定要對齊個位，十位一定要對齊十位</b>！點擊下方的紫色按鈕，可以換一題全新的隨機題目喔！
+        </div>
+
+        <div class="demo-section">
+            <h2>🎬 魔法直式動畫演練</h2>
+
+            <div class="control-panel">
+                <button class="btn btn-purple" onclick="generateNewDemo()">🎲 換一題全新隨機數</button>
+            </div>
+
+            <table class="math-table">
+                <tr id="row-num1">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr id="row-num2" class="border-bottom">
+                    <td>×</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr id="row-step1" class="hidden">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr id="row-step2" class="hidden" style="border-bottom: 4px solid var(--dark);">
+                    <td>+</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr id="row-step3" class="hidden">
+                    <td>=</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </table>
+
+            <div id="step-msg" class="step-text">載入中...</div>
+
+            <button id="next-btn" class="btn btn-orange" onclick="nextStep()">下一步 ➡️</button>
+            <button id="reset-btn" class="btn" onclick="resetDemo()" style="background-color:#666; display:none;">重頭看一次
+                ↩️</button>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數儲存當前隨機數與步驟
+        let num1 = 0, num2 = 0;
+        let onesDigit = 0, tensDigit = 0;
+        let step1Result = 0, step2Result = 0, finalResult = 0;
+        let currentStep = 0;
+
+        // 智能數字規避器：避開結尾為 0 或 5 的數字
+        function getRandomSmart(min, max) {
+            let num;
+            do {
+                num = Math.floor(Math.random() * (max - min + 1)) + min;
+            } while (num % 5 === 0 || num % 10 === 0);
+            return num;
+        }
+
+        // 將數字由右至左填入指定的 HTML 表格列中，確保完美對齊
+        function fillRowDigits(rowId, number, colorClass = '', hasTrailingZero = false) {
+            const row = document.getElementById(rowId);
+            const cells = row.getElementsByTagName('td');
+
+            // 清空第 1 到 5 欄 (第 0 欄保留給運算符號)
+            for (let i = 1; i <= 5; i++) {
+                cells[i].innerHTML = '';
+                cells[i].className = '';
+                cells[i].style.color = '';
+            }
+
+            let numStr = number.toString();
+            let cellPointer = 5; // 從最右邊的個位開始填
+
+            // 如果是第二步，要在個位強制補一個灰色的 0
+            if (hasTrailingZero) {
+                cells[5].innerHTML = '0';
+                cells[5].className = 'hl-zero';
+                cellPointer = 4; // 數字往前一格填寫
+            }
+
+            // 由個位往高位填入數字
+            for (let i = numStr.length - 1; i >= 0; i--) {
+                if (cellPointer < 1) break; // 超過萬位就不填
+
+                if (colorClass) {
+                    cells[cellPointer].innerHTML = `<span class="${colorClass}">${numStr[i]}</span>`;
+                } else {
+                    cells[cellPointer].innerText = numStr[i];
+                }
+                cellPointer--;
+            }
+        }
+
+        // 產生全新的隨機示範題
+        function generateNewDemo() {
+            num1 = getRandomSmart(111, 399); // 三位數
+            num2 = getRandomSmart(11, 49);   // 兩位數
+
+            onesDigit = num2 % 10;
+            tensDigit = Math.floor(num2 / 10);
+
+            step1Result = num1 * onesDigit;
+            step2Result = num1 * tensDigit; // 尚未補0的基礎值
+            finalResult = num1 * num2;
+
+            // 初始化表格數據
+            fillRowDigits('row-num1', num1);
+
+            // 乘數列處理，以便動態高亮個位或十位
+            const num2Row = document.getElementById('row-num2').getElementsByTagName('td');
+            num2Row[5].innerHTML = `<span id="d-ones">${onesDigit}</span>`;
+            num2Row[4].innerHTML = `<span id="d-tens">${tensDigit}</span>`;
+            num2Row[1].innerHTML = ''; num2Row[2].innerHTML = ''; num2Row[3].innerHTML = '';
+
+            // 計算並填好隱藏列
+            fillRowDigits('row-step1', step1Result, 'hl-ones');
+            fillRowDigits('row-step2', step2Result, '', true); // 啟動補0機制
+            fillRowDigits('row-step3', finalResult);
+
+            resetDemo();
+        }
+
+        // 重設動畫步驟
+        function resetDemo() {
+            currentStep = 0;
+            document.getElementById('row-step1').className = 'hidden';
+            document.getElementById('row-step2').className = 'hidden';
+            document.getElementById('row-step3').className = 'hidden';
+
+            // 移除乘數的高亮
+            document.getElementById('d-ones').className = '';
+            document.getElementById('d-tens').className = '';
+
+            document.getElementById('step-msg').innerHTML = `🎯 <b>新任務已準備好：</b> 請計算 <span style="font-size:1.5rem; color:var(--primary);">${num1} × ${num2}</span>。<br>點擊「下一步」按鈕，看魔法直式分解！`;
+            document.getElementById('next-btn').style.display = 'inline-block';
+            document.getElementById('reset-btn').style.display = 'none';
+        }
+
+        // 動畫下一步控制邏輯
+        function nextStep() {
+            currentStep++;
+            const msgBox = document.getElementById('step-msg');
+
+            if (currentStep === 1) {
+                document.getElementById('d-ones').className = 'hl-ones';
+                document.getElementById('row-step1').className = 'visible';
+                msgBox.innerHTML = `【第一步】<b>個位英雄出擊！</b><br>用紅色的個位 <span class="hl-ones">${onesDigit}</span> 乘以 ${num1}。<br>算式：${num1} × ${onesDigit} = <b>${step1Result}</b>。記住，末尾數字要對齊個位喔！`;
+            } else if (currentStep === 2) {
+                document.getElementById('d-ones').className = '';
+                document.getElementById('d-tens').className = 'hl-tens';
+                document.getElementById('row-step2').className = 'visible';
+                msgBox.innerHTML = `【第二步】<b>十位巨人登場！</b><br>用藍色的十位 <span class="hl-tens">${tensDigit}</span>（代表 ${tensDigit * 10}）乘以 ${num1}。<br>⚠️ <b>小三最容易忘記的秘訣：</b>因為是十位數，我們要先在個位補上一個灰色的【<b>0</b>】，然後計算 ${num1} × ${tensDigit} = ${step2Result}，並依序往前寫！得到 <b>${step2Result}0</b>。`;
+            } else if (currentStep === 3) {
+                document.getElementById('d-tens').className = '';
+                document.getElementById('row-step3').className = 'visible';
+                msgBox.innerHTML = `【第三步】<b>合體大團圓！</b><br>把兩行算出來的結果加起來：<br>算式：${step1Result} + ${step2Result * 10} = <span style="color:var(--success); font-size:1.6rem;">${finalResult}</span>。<br>恭喜你！直式對位非常精準，順利破關！🎉`;
+
+                document.getElementById('next-btn').style.display = 'none';
+                document.getElementById('reset-btn').style.display = 'inline-block';
+            }
+        }
+
+        // 網頁載入時自動初始化
+        window.onload = function () {
+            generateNewDemo();
+        };
+    </script>
+
+</body>
+
+</html>
