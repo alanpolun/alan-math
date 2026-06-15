@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小二數學：路線規劃大師 (進階版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="auth.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body { background-color: #f5f3ff; font-family: 'Noto Sans TC', sans-serif; touch-action: manipulation; }
+        .ipad-card { background: white; border-radius: 2.5rem; box-shadow: 0 20px 50px rgba(139, 92, 246, 0.15); width: 95vw; max-width: 950px; margin: 20px auto; padding: 2rem; border-top: 10px solid #8b5cf6; }
+        
+        /* 3x3 網格地圖設計 */
+        .map-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f8fafc; border: 4px solid #cbd5e1; border-radius: 1.5rem; padding: 16px; position: relative; }
+        .map-cell { background: white; border: 3px solid #e2e8f0; border-radius: 1.2rem; height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; font-size: 1.1rem; color: #334155; position: relative; transition: all 0.2s;}
+        .map-icon { font-size: 2.5rem; margin-bottom: 4px; line-height: 1; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1)); }
+        
+        /* 起點與終點標示 */
+        .target-cell { background-color: #fef08a; border-color: #eab308; }
+        .target-badge { position: absolute; top: -10px; right: -10px; background: #eab308; color: white; font-size: 0.8rem; padding: 4px 8px; border-radius: 1rem; border: 2px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); animation: pulse 1.5s infinite; font-weight: 900; z-index: 5;}
+        
+        /* 尋寶小人 (動態移動) */
+        .avatar { position: absolute; font-size: 3rem; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 20; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3)); pointer-events: none;}
+        
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+
+        /* 極簡動態指南針 */
+        .compass-box { position: relative; width: 110px; height: 110px; border: 5px solid #94a3b8; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: inset 0 4px 6px rgba(0,0,0,0.05); }
+        .compass-arrow-container { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .compass-north-text { font-size: 1.5rem; font-weight: 900; color: #ef4444; margin-top: 2px; line-height: 1; }
+        .compass-needle { width: 6px; height: 32px; background: #ef4444; border-radius: 3px; position: relative; margin-top: 2px; }
+        .compass-needle::before { content: ''; position: absolute; top: -8px; left: -5px; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 12px solid #ef4444; }
+        .compass-center { width: 12px; height: 12px; background: #334155; border-radius: 50%; position: absolute; z-index: 10; }
+
+        /* 方向按鈕 */
+        .dir-btn { background: white; border: 3px solid #e2e8f0; border-radius: 1rem; padding: 12px; font-size: 1.5rem; font-weight: 900; color: #475569; cursor: pointer; transition: all 0.1s; box-shadow: 0 4px 0 #e2e8f0; }
+        .dir-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #e2e8f0; }
+        .dir-btn.btn-n { border-color: #fca5a5; color: #ef4444; box-shadow: 0 4px 0 #fca5a5; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-2 relative">
+    <a href="index.html"
+        class="absolute top-4 left-4 bg-violet-600 hover:bg-violet-700 text-white font-bold py-2 px-6 rounded-full transition-colors shadow-lg z-50">←
+        返回</a>
+    
+    <div id="app" class="ipad-card text-center">
+        <div id="setup-view">
+            <div class="mb-4">
+                <span class="bg-violet-500 text-white px-5 py-1.5 rounded-full text-sm font-black tracking-widest">ADVANCED PATH BUILDER</span>
+            </div>
+            <h1 class="text-4xl font-black text-slate-800 mb-4">路線規劃大師 (長途版)</h1>
+            <p class="text-slate-600 mb-6 text-lg font-bold">5 個全新場景！每次最少要走 3 到 4 步才能到達終點！</p>
+            <div class="bg-violet-50 p-5 rounded-2xl mb-8 border-2 border-violet-200 text-left inline-block max-w-xl">
+                <p class="font-bold text-violet-800 mb-2">🗺️ 任務說明：</p>
+                <p class="text-slate-700 leading-relaxed font-medium">
+                    1. 觀察地圖：找到起點的<span class="text-2xl mx-1">🚶</span>和終點的<span class="bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full text-xs font-bold">目的地</span>。<br>
+                    2. 確認方向：看右邊指南針的<span class="text-red-500 font-black">「北」</span>朝向哪裡。<br>
+                    3. 輸入指令：點擊下方的【東、南、西、北】按鈕，排出一條可以走到目的地的路線。<br>
+                    4. 點擊【🚀 出發】驗證你的路線！
+                </p>
+            </div>
+            <button onclick="startQuiz()" class="w-full py-6 bg-violet-500 text-white rounded-3xl text-2xl font-black shadow-xl hover:bg-violet-600 active:scale-95 transition-all">
+                開始挑戰 🚀
+            </button>
+        </div>
+
+        <div id="quiz-view" class="hidden">
+            <div class="flex justify-between items-center mb-4 border-b pb-4 border-violet-100">
+                <div>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block text-left">進度</span>
+                    <span class="text-2xl font-black text-slate-700">第 <span id="current-num">1</span> / 5 題</span>
+                </div>
+                <div id="timer-display" class="text-2xl font-black text-violet-500 font-mono">00:00</div>
+            </div>
+
+            <div class="bg-violet-50 p-4 rounded-2xl mb-6 border-2 border-violet-200 shadow-sm flex items-center justify-between">
+                <p id="question-text" class="text-xl font-black text-slate-800"></p>
+                <button onclick="clearPath()" class="text-slate-500 font-bold bg-white px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100">🗑️ 清空指令</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+                <div class="lg:col-span-3">
+                    <div id="map-container" class="map-grid">
+                        <div id="avatar" class="avatar">🚶</div>
+                        </div>
+
+                    <div class="mt-6 bg-slate-50 p-4 rounded-2xl border-4 border-slate-200">
+                        <p class="text-sm font-black text-slate-500 mb-2 text-left">你的路線指令 (最多8步)：</p>
+                        <div id="path-display" class="flex flex-wrap gap-2 min-h-[48px] items-center text-lg font-black text-violet-700 bg-white p-3 rounded-xl border border-slate-200 mb-4">
+                            </div>
+                        
+                        <div class="grid grid-cols-4 gap-3">
+                            <button onclick="addPath('北')" class="dir-btn btn-n">北</button>
+                            <button onclick="addPath('南')" class="dir-btn">南</button>
+                            <button onclick="addPath('西')" class="dir-btn">西</button>
+                            <button onclick="addPath('東')" class="dir-btn">東</button>
+                        </div>
+                        <button id="go-btn" onclick="executePath()" class="w-full mt-4 py-4 bg-emerald-500 text-white rounded-2xl text-2xl font-black shadow-lg hover:bg-emerald-600 active:scale-95 transition-all">
+                            🚀 出發驗證！
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col items-center justify-center bg-slate-50 p-6 rounded-2xl border-4 border-slate-200">
+                    <p class="text-lg font-black text-slate-600 mb-6">地圖方向</p>
+                    <div class="compass-box">
+                        <div id="compass-rotator" class="compass-arrow-container">
+                            <span class="compass-north-text">北</span>
+                            <div class="compass-needle"></div>
+                        </div>
+                        <div class="compass-center"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-view" class="hidden text-left">
+            <h2 class="text-4xl font-black text-violet-500 mb-6 text-center">規劃報告</h2>
+            <div id="results-list" class="space-y-4 max-h-[60vh] overflow-y-auto mb-8 p-4 bg-slate-50 rounded-2xl"></div>
+            <button onclick="location.reload()" class="w-full py-5 bg-violet-500 text-white rounded-2xl font-bold text-xl hover:bg-violet-600">再挑戰一次</button>
+        </div>
+    </div>
+
+    <script>
+        let quizQuestions = [];
+        let curIdx = 0;
+        let currentPath = [];
+        let avatarPos = { x: 0, y: 0 };
+        let isAnimating = false;
+        let timerInterval;
+        let seconds = 0;
+        let playHistory = [];
+
+        window.onUserSet = () => {
+        };
+
+        async function saveIncorrectAnswers(records) {
+            try {
+                const now = new Date();
+                const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                const promises = [];
+                records.forEach((r, i) => {
+                    if (!r.isCorrect) {
+                        promises.push(window.addDoc(window.collection(window.db, "incorrect-log"), {
+                            username: window.getUsername(),
+                            question: `從 ${r.q.startName} 走到 ${r.q.endName}`,
+                            correctAnswer: "正確路徑",
+                            studentAnswer: r.userPath.join(" → ") || "未輸入",
+                            timestamp: timestamp
+                        }));
+                    }
+                });
+                await Promise.all(promises);
+            } catch (error) {
+                console.error('Error saving incorrect answers:', error);
+            }
+        }
+
+        async function saveAttendance(totalTime) {
+            try {
+                const now = new Date();
+                const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+                await window.addDoc(window.collection(window.db, "test-log"), {
+                    username: window.getUsername(),
+                    test: "路線規劃大師 (進階版)",
+                    timespend: Math.floor(totalTime / 60) + "分" + (totalTime % 60) + "秒",
+                    timestamp: timestamp
+                });
+            } catch (error) {
+                console.error('Error saving attendance:', error);
+            }
+        }
+
+        // 擴充為 5 個主題場景
+        const db_maps = [
+            {
+                title: "快樂社區",
+                items: [
+                    { name: "公園", icon: "⛲" }, { name: "警局", icon: "🚓" }, { name: "醫院", icon: "🏥" },
+                    { name: "學校", icon: "🏫" }, { name: "廣場", icon: "🏙️" }, { name: "圖書館", icon: "📚" },
+                    { name: "超市", icon: "🛒" }, { name: "麵包店", icon: "🥐" }, { name: "車站", icon: "🚌" }
+                ]
+            },
+            {
+                title: "可愛動物園",
+                items: [
+                    { name: "猴子", icon: "🐒" }, { name: "斑馬", icon: "🦓" }, { name: "大象", icon: "🐘" },
+                    { name: "老虎", icon: "🐯" }, { name: "熊貓", icon: "🐼" }, { name: "長頸鹿", icon: "🦒" },
+                    { name: "獅子", icon: "🦁" }, { name: "河馬", icon: "🦛" }, { name: "企鵝", icon: "🐧" }
+                ]
+            },
+            {
+                title: "歡樂遊樂場",
+                items: [
+                    { name: "摩天輪", icon: "🎡" }, { name: "碰碰車", icon: "🏎️" }, { name: "海盜船", icon: "🛶" },
+                    { name: "鬼屋", icon: "👻" }, { name: "售票處", icon: "🎟️" }, { name: "木馬", icon: "🎠" },
+                    { name: "過山車", icon: "🎢" }, { name: "小火車", icon: "🚂" }, { name: "小食亭", icon: "🍿" }
+                ]
+            },
+            {
+                title: "水果市集",
+                items: [
+                    { name: "蘋果", icon: "🍎" }, { name: "香蕉", icon: "🍌" }, { name: "橘子", icon: "🍊" },
+                    { name: "西瓜", icon: "🍉" }, { name: "葡萄", icon: "🍇" }, { name: "草莓", icon: "🍓" },
+                    { name: "芒果", icon: "🥭" }, { name: "梨子", icon: "🍐" }, { name: "蜜瓜", icon: "🍈" }
+                ]
+            },
+            {
+                title: "我的家",
+                items: [
+                    { name: "客廳", icon: "🛋️" }, { name: "睡房", icon: "🛏️" }, { name: "廚房", icon: "🍳" },
+                    { name: "浴室", icon: "🚿" }, { name: "電視", icon: "📺" }, { name: "露台", icon: "🪟" },
+                    { name: "飯廳", icon: "🪑" }, { name: "玩具房", icon: "🧸" }, { name: "大門", icon: "🚪" }
+                ]
+            }
+        ];
+
+        // 視覺方向 (dx, dy) 映射
+        const compassConfig = [
+            { deg: 0,   vec: { '北': {dx:0, dy:-1}, '南': {dx:0, dy:1},  '東': {dx:1, dy:0},  '西': {dx:-1, dy:0} } }, // 北朝上
+            { deg: 90,  vec: { '北': {dx:1, dy:0},  '南': {dx:-1, dy:0}, '東': {dx:0, dy:1},  '西': {dx:0, dy:-1} } }, // 北朝右
+            { deg: 180, vec: { '北': {dx:0, dy:1},  '南': {dx:0, dy:-1}, '東': {dx:-1, dy:0}, '西': {dx:1, dy:0} } },  // 北朝下
+            { deg: 270, vec: { '北': {dx:-1, dy:0}, '南': {dx:1, dy:0},  '東': {dx:0, dy:-1}, '西': {dx:0, dy:1} } }   // 北朝左
+        ];
+
+        function startQuiz() {
+            quizQuestions = [];
+            curIdx = 0;
+            seconds = 0;
+
+            // 隨機生成 5 題路徑題 (強制距離 >= 3)
+            while (quizQuestions.length < 5) {
+                let map = db_maps[Math.floor(Math.random() * db_maps.length)];
+                let conf = compassConfig[Math.floor(Math.random() * compassConfig.length)];
+                
+                let startIdx = Math.floor(Math.random() * 9);
+                let endIdx = Math.floor(Math.random() * 9);
+                
+                let startX = startIdx % 3;
+                let startY = Math.floor(startIdx / 3);
+                let endX = endIdx % 3;
+                let endY = Math.floor(endIdx / 3);
+
+                // 計算曼哈頓距離 (即在地圖上最少需要走的步數)
+                let distance = Math.abs(startX - endX) + Math.abs(startY - endY);
+
+                // 【核心更新】強制要求起點與終點的距離必須大於等於 3！
+                // 這樣保證學生一定要輸入 3 或 4 步才能走到。
+                if (distance < 3) continue;
+
+                quizQuestions.push({
+                    mapData: map,
+                    compassConf: conf,
+                    startPos: { x: startX, y: startY },
+                    endPos: { x: endX, y: endY },
+                    startName: map.items[startIdx].name,
+                    endName: map.items[endIdx].name,
+                    startIdx: startIdx,
+                    endIdx: endIdx
+                });
+            }
+
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('quiz-view').classList.remove('hidden');
+
+            timerInterval = setInterval(() => {
+                seconds++;
+                let m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                let s = (seconds % 60).toString().padStart(2, '0');
+                document.getElementById('timer-display').innerText = `${m}:${s}`;
+            }, 1000);
+
+            showQuestion();
+        }
+
+        function showQuestion() {
+            isAnimating = false;
+            currentPath = [];
+            updatePathDisplay();
+            document.getElementById('go-btn').disabled = false;
+            document.getElementById('go-btn').innerText = "🚀 出發驗證！";
+
+            const currentQ = quizQuestions[curIdx];
+            document.getElementById('current-num').innerText = curIdx + 1;
+            
+            document.getElementById('question-text').innerHTML = 
+                `📍 任務：請設計從【<span class="font-black text-violet-700">${currentQ.startName}</span>】走到【<span class="font-black text-yellow-600">${currentQ.endName}</span>】的長途路線。`;
+
+            // 設定指南針
+            document.getElementById('compass-rotator').style.transform = `rotate(${currentQ.compassConf.deg}deg)`;
+
+            // 渲染地圖
+            const mapContainer = document.getElementById('map-container');
+            const avatar = document.getElementById('avatar');
+            mapContainer.innerHTML = '';
+            mapContainer.appendChild(avatar);
+            
+            currentQ.mapData.items.forEach((item, index) => {
+                const isTarget = index === currentQ.endIdx;
+                
+                const cell = document.createElement('div');
+                cell.className = `map-cell ${isTarget ? 'target-cell' : ''}`;
+                cell.id = `cell-${index}`;
+                
+                if (isTarget) {
+                    cell.innerHTML += `<div class="target-badge">目的地</div>`;
+                }
+                cell.innerHTML += `<div class="map-icon">${item.icon}</div><span>${item.name}</span>`;
+                mapContainer.appendChild(cell);
+            });
+
+            // 放置小人到起點
+            avatarPos = { x: currentQ.startPos.x, y: currentQ.startPos.y };
+            updateAvatarVisual();
+        }
+
+        function updateAvatarVisual() {
+            const avatar = document.getElementById('avatar');
+            const targetCell = document.getElementById(`cell-${avatarPos.y * 3 + avatarPos.x}`);
+            
+            if (targetCell) {
+                setTimeout(() => {
+                    avatar.style.left = targetCell.offsetLeft + (targetCell.offsetWidth / 2) - 24 + 'px';
+                    avatar.style.top = targetCell.offsetTop + (targetCell.offsetHeight / 2) - 24 + 'px';
+                }, 50);
+            }
+        }
+
+        // 放寬指令上限到 8 步，讓學生有犯錯修正或繞路的空間
+        function addPath(dir) {
+            if (isAnimating || currentPath.length >= 8) return;
+            currentPath.push(dir);
+            updatePathDisplay();
+        }
+
+        function clearPath() {
+            if (isAnimating) return;
+            currentPath = [];
+            updatePathDisplay();
+        }
+
+        function updatePathDisplay() {
+            const display = document.getElementById('path-display');
+            if (currentPath.length === 0) {
+                display.innerHTML = '<span class="text-slate-300">尚未輸入指令...</span>';
+            } else {
+                display.innerHTML = currentPath.map((d, i) => 
+                    `<span class="bg-violet-100 px-3 py-1 rounded-lg border border-violet-200">
+                        ${d} ${i < currentPath.length-1 ? '➔' : ''}
+                    </span>`
+                ).join('');
+            }
+        }
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        async function executePath() {
+            if (currentPath.length === 0 || isAnimating) return;
+            
+            isAnimating = true;
+            document.getElementById('go-btn').disabled = true;
+            document.getElementById('go-btn').innerText = "🏃 移動中...";
+
+            const currentQ = quizQuestions[curIdx];
+            let tempPos = { x: currentQ.startPos.x, y: currentQ.startPos.y };
+            let hitWall = false;
+
+            // 依序執行指令
+            for (let i = 0; i < currentPath.length; i++) {
+                const dir = currentPath[i];
+                const vec = currentQ.compassConf.vec[dir];
+                
+                tempPos.x += vec.dx;
+                tempPos.y += vec.dy;
+
+                // 檢查是否出界
+                if (tempPos.x < 0 || tempPos.x > 2 || tempPos.y < 0 || tempPos.y > 2) {
+                    hitWall = true;
+                    alert("💥 哎呀！撞到牆壁走不出去了，請清空指令重新規劃！");
+                    break;
+                }
+
+                avatarPos = { x: tempPos.x, y: tempPos.y };
+                updateAvatarVisual();
+                await sleep(600); // 讓學生看清楚每一步的動畫
+            }
+
+            const isCorrect = (!hitWall && avatarPos.x === currentQ.endPos.x && avatarPos.y === currentQ.endPos.y);
+            
+            playHistory.push({
+                q: currentQ,
+                userPath: [...currentPath],
+                isCorrect: isCorrect
+            });
+
+            if (isCorrect) {
+                await sleep(300);
+                alert("✅ 太棒了！成功抵達目的地！");
+            } else if (!hitWall) {
+                await sleep(300);
+                alert("❌ 走錯地方了，沒有抵達目的地喔！");
+            }
+
+            if (curIdx < 4) {
+                curIdx++;
+                showQuestion();
+            } else {
+                finishQuiz();
+            }
+        }
+
+        function finishQuiz() {
+            clearInterval(timerInterval);
+            const totalTime = seconds;
+            document.getElementById('quiz-view').classList.add('hidden');
+            document.getElementById('result-view').classList.remove('hidden');
+
+            const list = document.getElementById('results-list');
+            list.innerHTML = '';
+            
+            playHistory.forEach((record, i) => {
+                const pathStr = record.userPath.length > 0 ? record.userPath.join(" ➔ ") : "未輸入";
+                list.innerHTML += `
+                    <div class="p-4 border-b border-slate-200 last:border-0 ${record.isCorrect ? 'bg-emerald-50' : 'bg-red-50'} rounded-2xl mb-3">
+                        <p class="font-black text-lg text-slate-800">${i + 1}. ${record.isCorrect ? '✅ 路線正確' : '❌ 路線失敗'}</p>
+                        <p class="text-slate-700 font-bold mt-2">任務：從【${record.q.startName}】走到【${record.q.endName}】</p>
+                        <p class="text-slate-600 mt-1 font-medium">你的指令：<span class="font-black text-violet-700">${pathStr}</span></p>
+                    </div>
+                `;
+            });
+            saveIncorrectAnswers(playHistory);
+            saveAttendance(totalTime);
+        }
+    </script>
+</body>
+</html>
