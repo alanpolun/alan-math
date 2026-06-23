@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚀 三位數乘一位數</title>
+    <title>🚀 星際數學大冒險 - 三位數乘一位數(進位特訓)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module" src="auth.js"></script>
     <style>
@@ -138,8 +138,8 @@
         /* 動態高亮顏色 */
         .hl-active { background-color: #FFF59D; border-radius: 8px; color: var(--dark); padding: 2px 5px; box-shadow: 0 0 5px #FBC02D;}
         .hl-result { color: var(--success); font-size: 2.8rem; }
-        .hidden { visibility: hidden; }
-        .visible { visibility: visible; }
+        .v-hidden { visibility: hidden; }
+        .v-visible { visibility: visible; }
     </style>
 </head>
 <body>
@@ -183,10 +183,10 @@
             </tr>
             <tr id="row-result">
                 <td>=</td>
-                <td id="res-thou" class="hidden"></td>
-                <td id="res-hun" class="hidden"></td>
-                <td id="res-ten" class="hidden"></td>
-                <td id="res-ones" class="hidden"></td>
+                <td id="res-thou" class="v-hidden"></td>
+                <td id="res-hun" class="v-hidden"></td>
+                <td id="res-ten" class="v-hidden"></td>
+                <td id="res-ones" class="v-hidden"></td>
             </tr>
         </table>
 
@@ -272,7 +272,7 @@
         hideElements.forEach(id => {
             let el = document.getElementById(id);
             el.innerText = '';
-            el.className = 'hidden';
+            el.className = 'v-hidden';
         });
 
         document.getElementById('step-msg').innerHTML = `🎯 <b>新任務已準備好：</b> 請計算 <span style="font-size:1.5rem; color:var(--primary);">${n1} × ${n2}</span>。<br>點擊「下一步」按鈕，看看進位魔法怎麼運作！`;
@@ -292,14 +292,14 @@
             
             let resEl = document.getElementById('res-ones');
             resEl.innerText = step1_write;
-            resEl.className = 'visible hl-result';
+            resEl.className = 'v-visible hl-result';
 
             let msg = `【第一步：個位】<br>先算個位： <b>${d1} × ${n2} = ${step1_prod}</b>。<br>在個位寫下 <b>${step1_write}</b>。`;
             
             if (step1_carry > 0) {
                 let carryEl = document.getElementById('c-ten');
                 carryEl.innerText = step1_carry;
-                carryEl.className = 'visible';
+                carryEl.className = 'v-visible';
                 msg += `<br>🔴 滿十要進位！把 <b>${step1_carry}</b> 寫在十位的頭頂上。`;
             }
             msgBox.innerHTML = msg;
@@ -311,7 +311,7 @@
             
             let resEl = document.getElementById('res-ten');
             resEl.innerText = step2_write;
-            resEl.className = 'visible hl-result';
+            resEl.className = 'v-visible hl-result';
 
             let msg = `【第二步：十位】<br>算十位： <b>${d2} × ${n2} = ${step2_prod}</b>。`;
             
@@ -324,7 +324,7 @@
             if (step2_carry > 0) {
                 let carryEl = document.getElementById('c-hun');
                 carryEl.innerText = step2_carry;
-                carryEl.className = 'visible';
+                carryEl.className = 'v-visible';
                 msg += `<br>🔴 再次進位！把 <b>${step2_carry}</b> 寫在百位的頭頂上。`;
             }
             msgBox.innerHTML = msg;
@@ -336,8 +336,8 @@
             
             let resHun = document.getElementById('res-hun');
             resHun.innerText = step3_write;
-            resHun.className = 'visible hl-result';
-
+            resHun.className = 'v-visible hl-result';
+            
             let msg = `【第三步：百位】<br>算百位： <b>${d3} × ${n2} = ${step3_prod}</b>。`;
 
             if (step2_carry > 0) {
@@ -347,7 +347,7 @@
             if (step3_carry > 0) {
                 let resThou = document.getElementById('res-thou');
                 resThou.innerText = step3_carry;
-                resThou.className = 'visible hl-result';
+                resThou.className = 'v-visible hl-result';
                 msg += `<br>因為前面沒有數字了，我們直接把 <b>${step3_carry}</b> 寫在千位！`;
             }
 
