@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 二位數除以單位數 - 直式商數特訓</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="auth.js"></script>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #FFD166;
+            --success: #06D6A0;
+            --danger: #EF476F;
+            --dark: #073B4C;
+            --bg: #F8F9FA;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            border: 4px solid var(--primary);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px #E1F5FE;
+        }
+
+        .intro-box {
+            background-color: #E3F2FD;
+            padding: 15px 20px;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            border-left: 6px solid var(--primary);
+        }
+
+        .control-panel {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-purple {
+            background-color: #8A2BE2;
+        }
+
+        .btn-green {
+            background-color: var(--success);
+            margin-top: 15px;
+        }
+
+        .quiz-section {
+            background: #FFF9E6;
+            border: 3px solid #FFB703;
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .quiz-card {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid var(--secondary);
+        }
+
+        .quiz-q {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--dark);
+            margin-bottom: 15px;
+            border-bottom: 2px dashed #ccc;
+            padding-bottom: 10px;
+        }
+
+        .step-row {
+            display: flex;
+            align-items: center;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .step-label {
+            width: 250px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .step-tens {
+            color: var(--primary);
+        }
+
+        .step-ones {
+            color: #FB8500;
+        }
+
+        .step-rem {
+            color: var(--danger);
+        }
+
+        .quiz-input {
+            font-size: 1.3rem;
+            padding: 8px;
+            width: 120px;
+            text-align: center;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            margin-left: 10px;
+            transition: border-color 0.3s;
+        }
+
+        .quiz-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .input-correct {
+            border-color: var(--success);
+            background-color: #E8F5E9;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .input-wrong {
+            border-color: var(--danger);
+            background-color: #FFEBEE;
+        }
+
+        .feedback {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .feedback-success {
+            background: #E8F5E9;
+            color: var(--success);
+        }
+
+        .feedback-error {
+            background: #FFEBEE;
+            color: var(--danger);
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" style="position: fixed; top: 20px; left: 20px; background: #4A90E2; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;">← Go Back</a>
+
+    <div class="container">
+        <h1>🚀 二位數除以單位數 - 直式商數特訓</h1>
+
+        <div class="intro-box">
+            親愛的小探險家！直式除法需要我們從<b>高位（十位）開始動腦筋</b>。<br>
+            這裏有 5 個精心準備的除法任務，請幫忙找出商的「十位數」、「個位數」和最後的「餘數」吧！
+        </div>
+
+        <div class="control-panel">
+            <button class="btn btn-purple" onclick="generateQuizzes()">🎲 產生 5 題全新任務</button>
+        </div>
+
+        <div class="quiz-section">
+            <div id="quiz-container">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuizzes = [];
+
+        function generateQuizzes() {
+            const container = document.getElementById('quiz-container');
+            if (!container) return;
+            
+            container.innerHTML = ''; 
+            currentQuizzes = [];      
+
+            for (let i = 0; i < 5; i++) {
+                let divisor = 3;
+                let dividend = 43; 
+                let quotient = 14;
+                let remainder = 1;
+                
+                let valid = false;
+                let attempts = 0;
+                
+                while (!valid && attempts < 200) {
+                    attempts++;
+                    let randDivisor = Math.floor(Math.random() * 7) + 3;      
+                    let randDividend = Math.floor(Math.random() * 90) + 10;   
+                    
+                    let randQuotient = Math.floor(randDividend / randDivisor);
+                    let randRemainder = randDividend % randDivisor;
+
+                    if (randQuotient > 10 && randRemainder > 0 && randDividend % 5 !== 0 && randDividend % 10 !== 0) {
+                        divisor = randDivisor;
+                        dividend = randDividend;
+                        quotient = randQuotient;
+                        remainder = randRemainder;
+                        valid = true;
+                    }
+                }
+
+                let q_tens = Math.floor(quotient / 10);
+                let q_ones = quotient % 10;
+
+                currentQuizzes.push({
+                    dividend: dividend,
+                    divisor: divisor,
+                    ans1: q_tens,
+                    ans2: q_ones,
+                    ans3: remainder
+                });
+
+                const card = document.createElement('div');
+                card.className = 'quiz-card';
+                card.innerHTML = `
+                    <div class="quiz-q">任務 ${i + 1}： 計算 ${dividend} ÷ ${divisor}</div>
+                    
+                    <div class="step-row">
+                        <div class="step-label step-tens">第一部分 (商的十位數) =</div>
+                        <input type="number" id="q${i}-p1" class="quiz-input" placeholder="十位商">
+                    </div>
+                    
+                    <div class="step-row">
+                        <div class="step-label step-ones">第二部分 (商的個位數) =</div>
+                        <input type="number" id="q${i}-p2" class="quiz-input" placeholder="個位商">
+                    </div>
+                    
+                    <div class="step-row">
+                        <div class="step-label step-rem">第三部分 (最終的餘數) =</div>
+                        <input type="number" id="q${i}-p3" class="quiz-input" placeholder="餘數">
+                    </div>
+
+                    <button class="btn btn-green" onclick="checkAnswer(${i})">✨ 檢查這題 ✨</button>
+                    <div id="fb-${i}" class="feedback"></div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function checkAnswer(index) {
+            const qData = currentQuizzes[index];
+            if (!qData) return;
+
+            const in1 = document.getElementById(`q${index}-p1`);
+            const in2 = document.getElementById(`q${index}-p2`);
+            const in3 = document.getElementById(`q${index}-p3`);
+            const fb = document.getElementById(`fb-${index}`);
+
+            const val1 = parseInt(in1.value);
+            const val2 = parseInt(in2.value);
+            const val3 = parseInt(in3.value);
+
+            let isP1Correct = (val1 === qData.ans1);
+            let isP2Correct = (val2 === qData.ans2);
+            let isP3Correct = (val3 === qData.ans3);
+
+            updateInputStyle(in1, isP1Correct, val1);
+            updateInputStyle(in2, isP2Correct, val2);
+            updateInputStyle(in3, isP3Correct, val3);
+
+            fb.style.display = 'block';
+
+            if (isNaN(val1) || isNaN(val2) || isNaN(val3)) {
+                fb.className = 'feedback feedback-error';
+                fb.innerHTML = "⚠️ 哎呀！有格子還空著呢，請把三個部分都填好再檢查！";
+            } else if (isP1Correct && isP2Correct && isP3Correct) {
+                fb.className = 'feedback feedback-success';
+                fb.innerHTML = "🎉 太棒了！十位、個位和餘數全部正確，你是除法直式小達人！";
+                in1.disabled = true; in2.disabled = true; in3.disabled = true;
+            } else {
+                fb.className = 'feedback feedback-error';
+                let errorMsg = "❌ 有點小失誤喔，再仔細想想看：<br>";
+                if (!isP1Correct) errorMsg += "• <b>商的十位數</b>不對喔。先看被除數的十位，看它能裝多少個除數？<br>";
+                if (!isP2Correct) errorMsg += "• <b>商的個位數</b>算錯了。是不是忘記把十位剩下的餘數和個位拼在一起算？<br>";
+                if (isP1Correct && isP2Correct && !isP3Correct) errorMsg += "• 商數都找對了！但是最後<b>「相減求餘數」</b>的地方不小心減錯囉。<br>";
+
+                fb.innerHTML = errorMsg + "試著修改答案再挑戰一次！";
+                
+                logIncorrectToFirebase(qData, val1, val2, val3);
+            }
+        }
+
+        async function logIncorrectToFirebase(qData, v1, v2, v3) {
+            try {
+                if (window.db && window.addDoc) {
+                    const now = new Date();
+                    const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                    const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+
+                    await window.addDoc(window.collection(window.db, "incorrect-log"), {
+                        username: window.getUsername ? window.getUsername() : "anonymous",
+                        question: `計算 ${qData.dividend} ÷ ${qData.divisor} (商數與餘數拆解)`,
+                        correctAnswer: `十位:${qData.ans1}, 個位:${qData.ans2}, 餘數:${qData.ans3}`,
+                        studentAnswer: `十位:${v1}, 個位:${v2}, 餘數:${v3}`,
+                        timestamp: timestamp,
+                        type: "math10_division_triple_input"
+                    });
+                }
+            } catch (error) {
+                console.error("Firebase logging failed:", error);
+            }
+        }
+
+        function updateInputStyle(inputElement, isCorrect, value) {
+            if (isNaN(value)) {
+                inputElement.className = 'quiz-input';
+                return;
+            }
+            if (isCorrect) {
+                inputElement.className = 'quiz-input input-correct';
+            } else {
+                inputElement.className = 'quiz-input input-wrong';
+            }
+        }
+
+        // 獨立於生命週期的安全初始化，確保雙擊本地檔案也能立即看到題目
+        function initQuiz() {
+            generateQuizzes();
+            try {
+                const existingUser = document.cookie.split('; ').find(row => row.startsWith('math_username='));
+                if (existingUser) {
+                    const username = decodeURIComponent(existingUser.split('=')[1]);
+                    logEntrance(username);
+                }
+            } catch (e) {
+                console.log("Cookie or Firebase init skipped in local file mode.");
+            }
+        }
+
+        // 確保在各種加載模式下都能被呼叫
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initQuiz);
+        } else {
+            initQuiz();
+        }
+
+        window.onload = initQuiz;
+
+        window.onUserSet = function (username) {
+            logEntrance(username);
+        };
+
+        async function logEntrance(username) {
+            try {
+                if (window.db && window.addDoc) {
+                    const now = new Date();
+                    const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+                    const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+
+                    await window.addDoc(window.collection(window.db, "test-log"), {
+                        username: username,
+                        test: "🚀 二位數除以單位數 - 直式商數特訓",
+                        timestamp: timestamp,
+                        status: "entered"
+                    });
+                }
+            } catch (error) {
+                console.error("Firebase entrance logging failed:", error);
+            }
+        }
+    </script>
+</body>
+
+</html>

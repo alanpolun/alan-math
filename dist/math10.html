@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 二位數除以單位數直式教學</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #4A90E2;
+            --secondary: #FFD166;
+            --success: #06D6A0;
+            --danger: #EF476F;
+            --dark: #073B4C;
+            --bg: #F8F9FA;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            border: 4px solid var(--primary);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px #E1F5FE;
+        }
+
+        .intro-box {
+            background-color: #E3F2FD;
+            padding: 15px 20px;
+            border-radius: 16px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            border-left: 6px solid var(--primary);
+        }
+
+        /* 方格紙數學直式風格 */
+        .demo-section {
+            background: #FFF9E6;
+            border: 3px dashed #FFB703;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .control-panel {
+            margin-bottom: 20px;
+        }
+
+        .math-table {
+            font-size: 2.5rem;
+            margin: 20px auto;
+            border-collapse: collapse;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+
+        /* 模擬方格紙除法：4個直欄 (空白/符號, 除數, 被除數十位/商十位, 被除數個位/商個位) */
+        .math-table td {
+            width: 65px;
+            height: 65px;
+            text-align: center;
+            vertical-align: middle;
+            padding: 2px;
+        }
+
+        /* 除法特殊的直式邊框 (香港小學標準樣式) */
+        .border-div-top {
+            border-top: 4px solid var(--dark);
+        }
+        .border-div-left {
+            border-left: 4px solid var(--dark);
+        }
+        .border-line td {
+            border-bottom: 4px solid var(--dark);
+        }
+
+        .step-text {
+            font-size: 1.25rem;
+            color: #333;
+            min-height: 90px;
+            font-weight: bold;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-orange {
+            background-color: #FB8500;
+        }
+
+        .btn-purple {
+            background-color: #8A2BE2;
+        }
+
+        /* 動態高亮顏色 */
+        .hl-ones {
+            color: var(--danger);
+            background-color: #FFCDD2;
+            border-radius: 8px;
+            padding: 2px 5px;
+        }
+
+        .hl-tens {
+            color: var(--primary);
+            background-color: #BBDEFB;
+            border-radius: 8px;
+            padding: 2px 5px;
+        }
+
+        .hidden-cell {
+            visibility: hidden;
+        }
+
+        .visible-cell {
+            visibility: visible;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" style="position: fixed; top: 20px; left: 20px; background: #4A90E2; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;">← Go Back</a>
+
+    <div class="container">
+        <h1>🎯 二位數除以單位數直式教學</h1>
+
+        <div class="intro-box">
+            親愛的小小數學家！做除式直式時，我們要<b>從高位（十位）開始除起</b>，而且要把數字對齊好喔！點擊下方的紫色按鈕，可以換一題全新的隨機題目！
+        </div>
+
+        <div class="demo-section">
+            <h2>🎬 魔法除法直式演練</h2>
+
+            <div class="control-panel">
+                <button class="btn btn-purple" onclick="generateNewDemo()">🎲 換一題全新隨機數</button>
+            </div>
+
+            <table class="math-table">
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td id="q-tens" class="hidden-cell"></td>
+                    <td id="q-ones" class="hidden-cell"></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td id="cell-divisor" class="text-blue-600"></td>
+                    <td id="cell-div-tens" class="border-div-top border-div-left"></td>
+                    <td id="cell-div-ones" class="border-div-top"></td>
+                </tr>
+                <tr id="row-p1" class="hidden-cell">
+                    <td></td>
+                    <td></td>
+                    <td id="p1-tens" style="border-bottom: 4px solid var(--dark);"></td>
+                    <td style="border-bottom: 4px solid var(--dark);"></td>
+                </tr>
+                <tr id="row-r1" class="hidden-cell">
+                    <td></td>
+                    <td></td>
+                    <td id="r1-tens"></td>
+                    <td id="r1-ones"></td>
+                </tr>
+                <tr id="row-p2" class="hidden-cell">
+                    <td></td>
+                    <td></td>
+                    <td id="p2-tens" style="border-bottom: 4px solid var(--dark);"></td>
+                    <td id="p2-ones" style="border-bottom: 4px solid var(--dark);"></td>
+                </tr>
+                <tr id="row-rem" class="hidden-cell">
+                    <td class="text-xl text-gray-400 font-normal">餘</td>
+                    <td></td>
+                    <td></td>
+                    <td id="cell-final-rem" class="text-red-500"></td>
+                </tr>
+            </table>
+
+            <div id="step-msg" class="step-text">載入中...</div>
+
+            <button id="next-btn" class="btn btn-orange" onclick="nextStep()">下一步 ➡️</button>
+            <button id="reset-btn" class="btn" onclick="resetDemo()" style="background-color:#666; display:none;">重頭看一次 ↩️</button>
+        </div>
+    </div>
+
+    <script>
+        // 全域變數
+        let dividend = 0; // 被除數 (兩位數)
+        let divisor = 0;  // 除數 (個位數)
+        let quotient = 0; // 商數 (>10)
+        let remainder = 0;// 餘數
+
+        let div_tens = 0, div_ones = 0;
+        let q_tens = 0, q_ones = 0;
+        let p1 = 0, r1_tens = 0, p2 = 0;
+        
+        let currentStep = 0;
+
+        // 智能題目產生器：商數必須大於 10，且有餘數（更具教學意義），避開整除或純5/10倍數
+        function generateNewDemo() {
+            do {
+                divisor = Math.floor(Math.random() * 7) + 3;      // 3 至 9
+                quotient = Math.floor(Math.random() * 30) + 11;   // 11 至 40 (確保商大於10)
+                remainder = Math.floor(Math.random() * (divisor - 1)) + 1; // 確保有餘數
+                dividend = quotient * divisor + remainder;
+            } while (dividend > 99 || dividend % 10 === 0 || dividend % 5 === 0);
+
+            // 拆解各個數位
+            div_tens = Math.floor(dividend / 10);
+            div_ones = dividend % 10;
+            q_tens = Math.floor(quotient / 10);
+            q_ones = quotient % 10;
+
+            p1 = q_tens * divisor;      // 第一步十位的乘積
+            r1_tens = div_tens - p1;    // 十位減法後的餘數
+            p2 = q_ones * divisor;      // 第二步個位的乘積
+
+            // 初始化表格靜態文字
+            document.getElementById('cell-divisor').innerText = divisor;
+            document.getElementById('cell-div-tens').innerText = div_tens;
+            document.getElementById('cell-div-ones').innerText = div_ones;
+
+            // 預先填入隱藏格子的數據
+            document.getElementById('q-tens').innerText = q_tens;
+            document.getElementById('q-ones').innerText = q_ones;
+            
+            document.getElementById('p1-tens').innerText = p1;
+            
+            document.getElementById('r1-tens').innerText = r1_tens === 0 ? '' : r1_tens; // 若是0則留空不寫
+            document.getElementById('r1-ones').innerText = div_ones;
+
+            // 處理第二步乘積的對齊 (可能是1位數或2位數)
+            if (p2 >= 10) {
+                document.getElementById('p2-tens').innerText = Math.floor(p2 / 10);
+                document.getElementById('p2-ones').innerText = p2 % 10;
+            } else {
+                document.getElementById('p2-tens').innerText = '';
+                document.getElementById('p2-ones').innerText = p2;
+            }
+
+            document.getElementById('cell-final-rem').innerText = remainder;
+
+            resetDemo();
+        }
+
+        // 重置動畫狀態
+        function resetDemo() {
+            currentStep = 0;
+            
+            // 隱藏所有動態步驟行
+            document.getElementById('q-tens').className = 'hidden-cell';
+            document.getElementById('q-ones').className = 'hidden-cell';
+            document.getElementById('row-p1').className = 'hidden-cell';
+            document.getElementById('row-r1').className = 'hidden-cell';
+            document.getElementById('row-p2').className = 'hidden-cell';
+            document.getElementById('row-rem').className = 'hidden-cell';
+
+            // 移除高亮
+            document.getElementById('cell-div-tens').className = 'border-div-top border-div-left';
+            document.getElementById('cell-div-ones').className = 'border-div-top';
+
+            document.getElementById('step-msg').innerHTML = `🎯 <b>新任務已準備好：</b> 請計算 <span style="font-size:1.5rem; color:var(--primary);">${dividend} ÷ ${divisor}</span>。<br>點擊「下一步」按鈕，看看除法直式的魔法步驟！`;
+            document.getElementById('next-btn').style.display = 'inline-block';
+            document.getElementById('reset-btn').style.display = 'none';
+        }
+
+        // 動畫下一步控制邏輯
+        function nextStep() {
+            currentStep++;
+            const msgBox = document.getElementById('step-msg');
+
+            if (currentStep === 1) {
+                // 第一步：除十位
+                document.getElementById('cell-div-tens').className = 'border-div-top border-div-left hl-tens';
+                document.getElementById('q-tens').className = 'visible-cell hl-tens';
+                document.getElementById('row-p1').className = 'visible-cell';
+                
+                msgBox.innerHTML = `【第一步】<b>十位英雄先出擊！</b><br>先看被除數的十位數 <span class="hl-tens">${div_tens}</span>。我們問：${div_tens} 裡面有多少個 ${divisor}？<br>因為 ${divisor} × ${q_tens} = ${p1} 最接近它，所以我們在十位上面的商寫上 <span class="hl-tens"><b>${q_tens}</b></span>。<br>然後把乘積 <b>${p1}</b> 寫在下面，準備做減法。`;
+            
+            } else if (currentStep === 2) {
+                // 第二步：十位減法並拉下個位
+                document.getElementById('cell-div-tens').className = 'border-div-top border-div-left';
+                document.getElementById('cell-div-ones').className = 'border-div-top hl-ones';
+                document.getElementById('row-r1').className = 'visible-cell';
+                
+                let subResultText = r1_tens > 0 ? `${div_tens} - ${p1} = ${r1_tens}` : `${div_tens} - ${p1} = 0 (0不用寫)`;
+                msgBox.innerHTML = `【第二步】<b>相減之後拉個位！</b><br>把十位數相減：${subResultText}。<br>接著，把個位數的 <span class="hl-ones"><b>${div_ones}</b></span> 像坐電梯一樣<b>移下來</b>，跟餘數拼在一起變成 <b>${r1_tens * 10 + div_ones}</b>！`;
+            
+            } else if (currentStep === 3) {
+                // 第三步：除個位
+                document.getElementById('cell-div-ones').className = 'border-div-top';
+                document.getElementById('q-ones').className = 'visible-cell hl-ones';
+                document.getElementById('row-p2').className = 'visible-cell';
+                
+                let currentNum = r1_tens * 10 + div_ones;
+                msgBox.innerHTML = `【第三步】<b>輪到新組合大顯身手！</b><br>現在用新數字 <b>${currentNum}</b> 除以 ${divisor}。我們問：${currentNum} 裡面最多有多少個 ${divisor}？<br>因為 ${divisor} × ${q_ones} = ${p2} 最接近它又不超過它，所以在個位上面的商寫上 <span class="hl-ones"><b>${q_ones}</b></span>。<br>把乘積 <b>${p2}</b> 寫在下面。`;
+            
+            } else if (currentStep === 4) {
+                // 第四步：計算最終餘數並結束
+                document.getElementById('q-tens').className = 'visible-cell';
+                document.getElementById('q-ones').className = 'visible-cell';
+                document.getElementById('row-rem').className = 'visible-cell';
+                
+                let currentNum = r1_tens * 10 + div_ones;
+                msgBox.innerHTML = `【第四步】<b>最後算出餘數，大功告成！</b><br>用最後的數字做減法：${currentNum} - ${p2} = <span style="color:var(--danger); font-size:1.4rem;"><b>${remainder}</b></span>。<br>因為餘數 <b>${remainder}</b> 比除數 ${divisor} 還要小，不能再除下去了！<br>🎉 <b>恭喜你完成計算！</b> 最終答案：<b>${dividend} ÷ ${divisor} = ${quotient} ... ${remainder}</b>`;
+                
+                document.getElementById('next-btn').style.display = 'none';
+                document.getElementById('reset-btn').style.display = 'inline-block';
+            }
+        }
+
+        // 網頁載入時自動初始化第一題
+        window.onload = function () {
+            generateNewDemo();
+        };
+    </script>
+</body>
+
+</html>
