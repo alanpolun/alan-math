@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小三數學：長度與距離（毫米、厘米、米、公里）練習</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module" src="auth.js"></script>
+  <style>
+    /* 隱藏數字輸入框的上下微調箭頭，讓學生直接使用鍵盤輸入 */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-amber-50 min-h-screen py-8 px-4 font-sans text-slate-800">
+
+  <!-- Go Back button (same pattern as math7-12) -->
+  <a href="index.html#year3" style="position: fixed; top: 20px; left: 20px; background: #4A90E2; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index:1000;">← Go Back</a>
+
+  <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border-4 border-amber-300 p-6 md:p-10">
+    
+    <!-- 標頭資訊區 -->
+    <header class="border-b-2 border-dashed border-amber-200 pb-6 mb-8 text-center">
+      <div class="inline-block bg-amber-400 text-amber-950 text-xs md:text-sm font-bold px-4 py-1 rounded-full mb-2">
+        小學三年級數學科研習練習
+      </div>
+      <h1 class="text-2xl md:text-4xl font-extrabold text-slate-800 tracking-tight">
+        單元：長度與距離（毫米、厘米、米、公里）
+      </h1>
+      <p class="text-slate-500 text-sm md:text-base mt-2">
+        請仔細閱讀題目，將答案填入文字框或選擇正確答案。完成後點擊頁尾的「交卷並對答案」。
+      </p>
+    </header>
+
+    <!-- 題目容器 -->
+    <form id="quiz-form" class="space-y-8">
+      <div id="questions-container" class="space-y-8">
+        <!-- 題目由 JavaScript 動態生成 -->
+      </div>
+
+      <!-- 操作按鈕區 -->
+      <div class="pt-6 border-t-2 border-amber-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <button type="button" onclick="generateQuiz()" class="w-full sm:w-auto px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition flex items-center justify-center gap-2">
+          🔄 生成新練習
+        </button>
+        <button type="button" id="submit-btn" onclick="checkAnswers()" class="w-full sm:w-auto px-8 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+          ✏️ 交卷並對答案
+        </button>
+      </div>
+    </form>
+
+    <!-- 成績與解析展示區 -->
+    <div id="result-board" class="hidden mt-8 p-6 bg-slate-50 rounded-xl border-2 border-slate-200">
+      <div class="text-center mb-6">
+        <span class="text-sm font-semibold text-slate-500">練習得分</span>
+        <div id="score-text" class="text-4xl font-black text-amber-600 my-1">0 / 10</div>
+        <p id="feedback-text" class="text-slate-600 font-medium"></p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // ===== 看圖題 SVG 繪圖工具 =====
+    const MM_PX = 4; // 每毫米 4 像素
+
+    // 直尺（0-100 毫米，最小刻度 1 毫米）+ 顏色筆
+    function drawRulerWithPencil(startMm, endMm) {
+      const L = 20;
+      let ticks = '';
+      for (let mm = 0; mm <= 100; mm++) {
+        const x = L + mm * MM_PX;
+        const isCm = mm % 10 === 0;
+        ticks += `<line x1="${x}" y1="78" x2="${x}" y2="${isCm ? 91 : 85}" stroke="#a16207" stroke-width="${isCm ? 1.3 : 0.5}"/>`;
+        if (isCm) ticks += `<text x="${x}" y="104" font-size="10" text-anchor="middle" fill="#92400e" font-weight="bold">${mm / 10}</text>`;
+      }
+      const pxS = L + startMm * MM_PX;
+      const pxE = L + endMm * MM_PX;
+      const tipPx = 24;
+      return `
+      <svg viewBox="0 0 440 112" class="w-full max-w-lg mx-auto" role="img" aria-label="直尺與顏色筆">
+        <line x1="${pxS}" y1="56" x2="${pxS}" y2="78" stroke="#64748b" stroke-width="1" stroke-dasharray="3,2"/>
+        <line x1="${pxE}" y1="56" x2="${pxE}" y2="78" stroke="#64748b" stroke-width="1" stroke-dasharray="3,2"/>
+        <rect x="${pxS}" y="26" width="${pxE - pxS - tipPx}" height="30" rx="3" fill="#38bdf8" stroke="#0369a1" stroke-width="1.5"/>
+        <polygon points="${pxE - tipPx},26 ${pxE},41 ${pxE - tipPx},56" fill="#0369a1"/>
+        <rect x="${L}" y="78" width="400" height="20" rx="3" fill="#fef9c3" stroke="#ca8a04" stroke-width="1.5"/>
+        ${ticks}
+      </svg>`;
+    }
+
+    // 數線（0-100 毫米，最小刻度 1 毫米）+ 點 O/A/B/C/D
+    function drawNumberLine(points) {
+      const L = 20;
+      let ticks = '', pts = '';
+      for (let mm = 0; mm <= 100; mm++) {
+        const x = L + mm * MM_PX;
+        const isCm = mm % 10 === 0;
+        ticks += `<line x1="${x}" y1="46" x2="${x}" y2="${isCm ? 60 : 52}" stroke="${isCm ? '#475569' : '#94a3b8'}" stroke-width="${isCm ? 1.3 : 0.5}"/>`;
+        if (isCm) ticks += `<text x="${x}" y="76" font-size="10" text-anchor="middle" fill="#475569" font-weight="bold">${mm}</text>`;
+      }
+      points.forEach(p => {
+        const x = L + p.mm * MM_PX;
+        const color = p.label === 'O' ? '#dc2626' : '#2563eb';
+        pts += `<circle cx="${x}" cy="46" r="5" fill="${color}" stroke="#fff" stroke-width="1.5"/>`;
+        pts += `<text x="${x}" y="28" font-size="13" font-weight="bold" text-anchor="middle" fill="${color}">${p.label}</text>`;
+      });
+      return `
+      <svg viewBox="0 0 440 86" class="w-full max-w-lg mx-auto" role="img" aria-label="毫米數線">
+        <line x1="${L}" y1="46" x2="${L + 400}" y2="46" stroke="#334155" stroke-width="2"/>
+        ${ticks}${pts}
+        <text x="425" y="76" font-size="9" fill="#64748b">(毫米)</text>
+      </svg>`;
+    }
+
+    // 路線地圖：學校→商場→醫院 及 學校→郵局→醫院
+    function drawRouteMap(l1, l2, l3, l4) {
+      const node = (x, y, name, color) => `
+        <circle cx="${x}" cy="${y}" r="24" fill="${color}" stroke="#fff" stroke-width="2"/>
+        <text x="${x}" y="${y + 5}" font-size="14" font-weight="bold" text-anchor="middle" fill="#fff">${name}</text>`;
+      const edgeLabel = (x, y, txt) => {
+        const w = Math.max(52, txt.length * 13 + 16);
+        return `
+        <rect x="${x - w / 2}" y="${y - 11}" width="${w}" height="18" rx="4" fill="#fffbeb" stroke="#e2e8f0"/>
+        <text x="${x}" y="${y + 2}" font-size="12" font-weight="bold" text-anchor="middle" fill="#0f172a">${txt}</text>`;
+      };
+      return `
+      <svg viewBox="0 0 420 300" class="w-full max-w-md mx-auto" role="img" aria-label="路線地圖">
+        <line x1="70" y1="76" x2="70" y2="204" stroke="#94a3b8" stroke-width="3"/>
+        <line x1="90" y1="232" x2="207" y2="269" stroke="#94a3b8" stroke-width="3"/>
+        <line x1="96" y1="50" x2="324" y2="50" stroke="#94a3b8" stroke-width="3"/>
+        <line x1="339" y1="71" x2="241" y2="255" stroke="#94a3b8" stroke-width="3"/>
+        ${edgeLabel(38, 140, l1)}
+        ${edgeLabel(148, 236, l2)}
+        ${edgeLabel(210, 30, l3)}
+        ${edgeLabel(292, 170, l4)}
+        ${node(70, 50, '學校', '#f59e0b')}
+        ${node(70, 226, '商場', '#10b981')}
+        ${node(350, 50, '郵局', '#8b5cf6')}
+        ${node(230, 276, '醫院', '#ef4444')}
+      </svg>`;
+    }
+
+    let quizData = [];
+    let isSubmitted = false;
+    let quizStartTime = null;
+
+    function generateQuiz() {
+      quizData = [];
+      isSubmitted = false;
+      quizStartTime = Date.now();
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+      document.getElementById('result-board').classList.add('hidden');
+
+      // 重新顯示「交卷並對答案」按鈕（新一輪練習開始）
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) submitBtn.classList.remove('hidden');
+
+      // 1. 單位換算：cm/mm
+      const q1_cm = getRandomInt(5, 45);
+      const q1_mm = getRandomInt(1, 9);
+      const q1_ans = q1_cm * 10 + q1_mm;
+      quizData.push({
+        id: 1,
+        type: 'input',
+        title: '單位換算（厘米與毫米）',
+        prompt: `${q1_cm} 厘米 ${q1_mm} 毫米 = `,
+        suffix: ' 毫米',
+        ans: q1_ans.toString(),
+        explain: `1 厘米 = 10 毫米。${q1_cm} 厘米 = ${q1_cm * 10} 毫米，加上 ${q1_mm} 毫米，即 ${q1_cm * 10} + ${q1_mm} = ${q1_ans} 毫米。`
+      });
+
+      // 2. 單位換算：km/m
+      const q2_km = getRandomInt(1, 9);
+      const q2_m = getRandomInt(5, 95);
+      const q2_ans = q2_km * 1000 + q2_m;
+      quizData.push({
+        id: 2,
+        type: 'input',
+        title: '單位換算（公里與米）',
+        prompt: `${q2_km} 公里 ${q2_m} 米 = `,
+        suffix: ' 米',
+        ans: q2_ans.toString(),
+        explain: `1 公里 = 1000 米。${q2_km} 公里 = ${q2_km * 1000} 米，加上 ${q2_m} 米，即 ${q2_km * 1000} + ${q2_m} = ${q2_ans} 米。`
+      });
+
+      // 3. 單位換算反向：m -> km + m（較複雜數值，如 6047 米 = 6 公里 47 米）
+      const q3_km = getRandomInt(2, 9);
+      const q3_m = getRandomInt(11, 999);
+      const q3_total = q3_km * 1000 + q3_m;
+      quizData.push({
+        id: 3,
+        type: 'multi-input',
+        title: '單位換算（米轉公里與米）',
+        prompt: `${q3_total} 米 = `,
+        inputs: [
+          { suffix: ' 公里', key: 'km', ans: q3_km.toString() },
+          { suffix: ' 米', key: 'm', ans: q3_m.toString() }
+        ],
+        explain: `${q3_total} 米 = ${q3_km} 公里 = ${q3_km * 1000} 米，剩下的 ${q3_total - q3_km * 1000} 米，即 ${q3_km} 公里 ${q3_m} 米。`
+      });
+
+      // 4. 適當單位選擇
+      const unitScenarios = [
+        { item: "作業簿的厚度", val: "4", ans: "毫米" },
+        { item: "爸爸的運動鞋長度", val: "28", ans: "厘米" },
+        { item: "一張五十元紙幣的長度", val: "15", ans: "厘米" },
+        { item: "吐露港公路的長度", val: "11", ans: "公里" },
+        { item: "一部平板電腦的厚度", val: "8", ans: "毫米" },
+        { item: "一條機場跑道的長度", val: "3800", ans: "米" },
+        { item: "大帽山的高度", val: "957", ans: "米" },
+        { item: "香港與澳門的距離", val: "66", ans: "公里" }
+      ];
+      const selectedUnit = unitScenarios[getRandomInt(0, unitScenarios.length - 1)];
+      quizData.push({
+        id: 4,
+        type: 'select',
+        title: '填入適當的長度單位',
+        prompt: `${selectedUnit.item}約是 ${selectedUnit.val} `,
+        options: ['毫米', '厘米', '米', '公里'],
+        ans: selectedUnit.ans,
+        explain: `${selectedUnit.item}適合用「${selectedUnit.ans}」作為度量單位。`
+      });
+
+      // 5. 選擇適當的量度工具
+      const toolScenarios = [
+        { item: "學生證的闊度", ans: "A", tool: "厘米尺" },
+        { item: "課室黑板的長度", ans: "B", tool: "米尺" },
+        { item: "腰圍的尺寸", ans: "C", tool: "軟尺" },
+        { item: "學校跑道的長度", ans: "D", tool: "滾輪" }
+      ];
+      const selectedTool = toolScenarios[getRandomInt(0, toolScenarios.length - 1)];
+      quizData.push({
+        id: 5,
+        type: 'select-text',
+        title: '量度工具的選擇',
+        prompt: `哪種量度工具最適合用來量度「${selectedTool.item}」？`,
+        options: [
+          { label: "A. 厘米尺", val: "A" },
+          { label: "B. 米尺", val: "B" },
+          { label: "C. 軟尺", val: "C" },
+          { label: "D. 滾輪", val: "D" }
+        ],
+        ans: selectedTool.ans,
+        explain: `量度${selectedTool.item}最適合使用的工具是${selectedTool.tool}（選項 ${selectedTool.ans}）。`
+      });
+
+      // 6. 估計與量度相差（看圖：直尺上的顏色筆）
+      const est = 80;
+      const pencilStart = getRandomInt(8, 15);
+      const pencilEnd = getRandomInt(60, 92);
+      const actual = pencilEnd - pencilStart;
+      const diff = Math.abs(est - actual);
+      quizData.push({
+        id: 6,
+        type: 'input',
+        title: '估計與實際量度比較（看圖）',
+        prompt: `下圖的顏色筆放在直尺上量度。俊希估計顏色筆長 ${est} 毫米。細看直尺上的刻度：<br>${drawRulerWithPencil(pencilStart, pencilEnd)}<br>顏色筆實際長多少毫米？與俊希估計的長度相差多少毫米？<br>（先答實際長度，下格答相差）`,
+        suffix: ' 毫米（實際長度）',
+        suffix2: ' 毫米（相差）',
+        ans: actual.toString(),
+        ans2: diff.toString(),
+        explain: `顏色筆由 ${pencilStart} 毫米的刻度延伸至 ${pencilEnd} 毫米。實際長度 = ${pencilEnd} − ${pencilStart} = ${actual} 毫米。與估計相差 = |${est} − ${actual}| = ${diff} 毫米。`
+      });
+
+      // 7. 郊遊徑長度排序 — 20 個預設情境，隨機抽取（每條郊遊徑的長度在不同情境中保持一致）
+      const trailScenarios = [
+        [ ["石壁郊遊徑",5,500], ["馬鞍山郊遊徑",4,500], ["大潭郊遊徑",5,200], ["流水響郊遊徑",4,400] ],
+        [ ["龍脊",8,500], ["薄扶林家樂徑",2,750], ["大潭水塘家樂徑",3,900], ["黃泥涌樹木廊",3,250] ],
+        [ ["城門水塘郊遊徑",6,200], ["大欖涌環湖徑",8,800], ["河背水塘環湖徑",1,800], ["清水灣樹木廊",6,450] ],
+        [ ["八仙嶺自然教育徑",4,200], ["船灣環湖徑",9,500], ["北潭涌家樂徑",2,100], ["鰂魚涌樹木廊",2,450] ],
+        [ ["黃泥墩郊遊徑",3,600], ["甲龍林徑",2,800], ["菠蘿壩自然教育徑",1,200], ["大棠樹木廊",3,150] ],
+        [ ["川龍林徑",1,500], ["芝麻灣郊遊徑",7,300], ["東涌郊遊徑",5,800], ["彌勒山郊遊徑",5,350] ],
+        [ ["大帽山家樂徑",2,600], ["菠蘿壩自然教育徑",1,200], ["河背水塘環湖徑",1,800], ["薄扶林家樂徑",2,750] ],
+        [ ["黃泥涌樹木廊",3,250], ["大潭水塘家樂徑",3,900], ["北潭涌家樂徑",2,100], ["鰂魚涌樹木廊",2,450] ],
+        [ ["龍脊",8,500], ["大欖涌環湖徑",8,800], ["芝麻灣郊遊徑",7,300], ["東涌郊遊徑",5,800] ],
+        [ ["石壁郊遊徑",5,500], ["城門水塘郊遊徑",6,200], ["清水灣樹木廊",6,450], ["大潭郊遊徑",5,200] ],
+        [ ["馬鞍山郊遊徑",4,500], ["流水響郊遊徑",4,400], ["八仙嶺自然教育徑",4,200], ["船灣環湖徑",9,500] ],
+        [ ["大棠樹木廊",3,150], ["黃泥墩郊遊徑",3,600], ["川龍林徑",1,500], ["甲龍林徑",2,800] ],
+        [ ["彌勒山郊遊徑",5,350], ["東涌郊遊徑",5,800], ["石壁郊遊徑",5,500], ["芝麻灣郊遊徑",7,300] ],
+        [ ["薄扶林家樂徑",2,750], ["鰂魚涌樹木廊",2,450], ["北潭涌家樂徑",2,100], ["大帽山家樂徑",2,600] ],
+        [ ["菠蘿壩自然教育徑",1,200], ["河背水塘環湖徑",1,800], ["大潭水塘家樂徑",3,900], ["黃泥涌樹木廊",3,250] ],
+        [ ["龍脊",8,500], ["大潭郊遊徑",5,200], ["石壁郊遊徑",5,500], ["芝麻灣郊遊徑",7,300] ],
+        [ ["大欖涌環湖徑",8,800], ["清水灣樹木廊",6,450], ["城門水塘郊遊徑",6,200], ["船灣環湖徑",9,500] ],
+        [ ["八仙嶺自然教育徑",4,200], ["流水響郊遊徑",4,400], ["馬鞍山郊遊徑",4,500], ["甲龍林徑",2,800] ],
+        [ ["大棠樹木廊",3,150], ["川龍林徑",1,500], ["菠蘿壩自然教育徑",1,200], ["河背水塘環湖徑",1,800] ],
+        [ ["北潭涌家樂徑",2,100], ["大帽山家樂徑",2,600], ["薄扶林家樂徑",2,750], ["鰂魚涌樹木廊",2,450] ]
+      ];
+      const pickedScenario = trailScenarios[getRandomInt(0, trailScenarios.length - 1)];
+      const trails = pickedScenario.map(([name, km, m]) => ({ name, len: km * 1000 + m, label: `${km} 公里 ${m} 米` }));
+      const sortedTrails = [...trails].sort((a, b) => a.len - b.len);
+      quizData.push({
+        id: 7,
+        type: 'trail-sort',
+        title: '郊遊徑長度比較',
+        prompt: `已知四條郊遊徑的長度分別為：<br>
+          • ${trails[0].name}（${trails[0].label}）<br>
+          • ${trails[1].name}（${trails[1].label}）<br>
+          • ${trails[2].name}（${trails[2].label}）<br>
+          • ${trails[3].name}（${trails[3].label}）<br>
+          請將以上四條郊遊徑按長度<b>由短至長</b>排列：`,
+        sortedAns: sortedTrails.map(t => t.name),
+        trails: trails.map(t => t.name),
+        explain: `換算為米後進行比較：${sortedTrails.map(t => `${t.name}（${t.len} 米）`).join(' < ')}。`
+      });
+
+      // 8. 地圖路程應用題（看圖：路線地圖，複雜數值如 1 公里 326 米）
+      const legParts = () => ({ km: getRandomInt(1, 4), m: getRandomInt(50, 950) });
+      const d1 = legParts(), d2 = legParts(), d3 = legParts(), d4 = legParts();
+      const legTotal = (l) => l.km * 1000 + l.m;
+      const path1 = legTotal(d1) + legTotal(d2);
+      const path2 = legTotal(d3) + legTotal(d4);
+      // 確保兩條路線長度不同（最短路線明確）
+      if (path1 === path2) { d4.m = d4.m === 950 ? 800 : 950; }
+      const path2b = legTotal(d3) + legTotal(d4);
+      const shortest = Math.min(path1, path2b);
+      const shortestIsRoute1 = path1 < path2b;
+      const legStr = (l) => `${l.km} 公里 ${l.m} 米`;
+      quizData.push({
+        id: 8,
+        type: 'map-q1',
+        title: '地圖路程計算（最快路線，看圖）',
+        prompt: `細看以下路線地圖：<br>${drawRouteMap(legStr(d1), legStr(d2), legStr(d3), legStr(d4))}<br>由學校前往醫院，<b>最短的路程</b>要走多少米？`,
+        suffix: ' 米',
+        ans: shortest.toString(),
+        explain: `先把每段路程換算為米：路線一（經商場）= ${legStr(d1)} + ${legStr(d2)} = ${legTotal(d1)} + ${legTotal(d2)} = ${path1} 米；路線二（經郵局）= ${legStr(d3)} + ${legStr(d4)} = ${legTotal(d3)} + ${legTotal(d4)} = ${path2b} 米。最短路程為 ${shortest} 米（經${shortestIsRoute1 ? '商場' : '郵局'}）。`
+      });
+
+      // 9. 地圖路程應用題（多走的路程，複雜數值如 2 公里 129 米）
+      const dA_km = getRandomInt(3, 9);
+      const dA_m = getRandomInt(100, 950);
+      const dB_km = getRandomInt(1, 2);
+      const dB_m = getRandomInt(50, 950);
+      const extraA = dA_km * 1000 + dA_m;
+      const extraB = dB_km * 1000 + dB_m;
+      const extraDiff = extraA - extraB;
+      quizData.push({
+        id: 9,
+        type: 'input',
+        title: '地圖路程計算（比較多走的路程）',
+        prompt: `陳先生由圖書館前往警署，原本最短路程只需 ${dB_km} 公里 ${dB_m} 米，但他繞道行駛了 ${dA_km} 公里 ${dA_m} 米的路。他比最短的路程多走了多少米？`,
+        suffix: ' 米',
+        ans: extraDiff.toString(),
+        explain: `先把兩個路程換算為米：繞道路程 = ${dA_km} 公里 ${dA_m} 米 = ${extraA} 米；最短路程 = ${dB_km} 公里 ${dB_m} 米 = ${extraB} 米。多走的路程 = ${extraA} − ${extraB} = ${extraDiff} 米。`
+      });
+
+      // 10. 數線看圖題：點與點的距離（取代原時間題）
+      const ptO = 0;
+      const ptA = getRandomInt(28, 44);
+      const ptB = getRandomInt(48, 62);
+      const ptC = getRandomInt(66, 82);
+      const ptD = getRandomInt(85, 100);
+      const nlPoints = [
+        { label: 'O', mm: ptO }, { label: 'A', mm: ptA },
+        { label: 'B', mm: ptB }, { label: 'C', mm: ptC }, { label: 'D', mm: ptD }
+      ];
+      // (a) A 與 O 相距；(b) 隨機抽一對點求距離（A–C / B–D / B–C）；(c) C→O→D 共行
+      const bPairs = [['A', 'C'], ['B', 'D'], ['B', 'C']];
+      const pickedPair = bPairs[getRandomInt(0, bPairs.length - 1)];
+      const pairPos = { 'A': ptA, 'B': ptB, 'C': ptC, 'D': ptD };
+      const ansB = Math.abs(pairPos[pickedPair[1]] - pairPos[pickedPair[0]]);
+      quizData.push({
+        id: 10,
+        type: 'numline-q',
+        title: '數線量度（看圖）',
+        prompt: `用直尺量度下圖中各點間的距離，把答案填在橫線上或圈起來：<br>${drawNumberLine(nlPoints)}<br>
+          (a) A 點與 O 點相距 <input type="number" id="q_${10}_a" class="w-20 px-2 py-1 border-2 border-amber-300 rounded-lg text-center font-bold" placeholder="毫米"> 毫米。<br>
+          (b) ${pickedPair[0]} 點與 ${pickedPair[1]} 點相距 <input type="number" id="q_${10}_b_mm" class="w-20 px-2 py-1 border-2 border-amber-300 rounded-lg text-center font-bold" placeholder="毫米"> 毫米。<br>
+          (c) 甲蟲沿黑線由 C 點爬行到 O 點，再爬行到 D 點，牠共爬行了 <input type="number" id="q_${10}_c" class="w-20 px-2 py-1 border-2 border-amber-300 rounded-lg text-center font-bold" placeholder="毫米"> 毫米。`,
+        ansA: ptA.toString(),
+        ansBMM: ansB.toString(),
+        ansC: (ptC + ptD).toString(),
+        explain: `(a) A 點在 ${ptA} 毫米處，與 O 點相距 ${ptA} 毫米。(b) ${pickedPair[0]} 點在 ${pairPos[pickedPair[0]]} 毫米處，${pickedPair[1]} 點在 ${pairPos[pickedPair[1]]} 毫米處，兩點相距 ${Math.abs(pairPos[pickedPair[1]] - pairPos[pickedPair[0]])} 毫米。(c) C→O = ${ptC} 毫米，O→D = ${ptD} 毫米，共爬行 ${ptC} + ${ptD} = ${ptC + ptD} 毫米。`
+      });
+
+      // 渲染題目
+      quizData.forEach((q, idx) => {
+        const qDiv = document.createElement('div');
+        qDiv.className = 'bg-amber-50/50 rounded-xl p-5 border border-amber-200';
+        
+        let contentHtml = `
+          <div class="flex items-center gap-2 mb-3">
+            <span class="bg-amber-500 text-white font-bold text-xs px-2.5 py-1 rounded-md">第 ${idx + 1} 題</span>
+            <span class="text-xs font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">${q.title}</span>
+          </div>
+          <div class="text-slate-800 font-medium text-base md:text-lg mb-4 leading-relaxed">${q.prompt}</div>
+        `;
+
+        if (q.type === 'input' && q.ans2) {
+          contentHtml += `
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div class="flex items-center gap-2">
+                <input type="number" id="q_${q.id}" class="w-24 px-3 py-2 border-2 border-amber-300 rounded-lg focus:outline-none focus:border-amber-500 text-center font-bold text-lg" placeholder="答案">
+                <span class="font-bold text-slate-700">${q.suffix || ''}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="number" id="q_${q.id}_b" class="w-24 px-3 py-2 border-2 border-amber-300 rounded-lg focus:outline-none focus:border-amber-500 text-center font-bold text-lg" placeholder="答案">
+                <span class="font-bold text-slate-700">${q.suffix2 || ''}</span>
+              </div>
+            </div>
+          `;
+        } else if (q.type === 'input' || q.type === 'map-q1') {
+          contentHtml += `
+            <div class="flex items-center gap-2">
+              <input type="number" id="q_${q.id}" class="w-32 px-3 py-2 border-2 border-amber-300 rounded-lg focus:outline-none focus:border-amber-500 text-center font-bold text-lg" placeholder="答案">
+              <span class="font-bold text-slate-700">${q.suffix || ''}</span>
+            </div>
+          `;
+        } else if (q.type === 'multi-input') {
+          contentHtml += `<div class="flex flex-wrap items-center gap-3">`;
+          q.inputs.forEach(inp => {
+            contentHtml += `
+              <div class="flex items-center gap-1">
+                <input type="number" id="q_${q.id}_${inp.key}" class="w-24 px-3 py-2 border-2 border-amber-300 rounded-lg focus:outline-none focus:border-amber-500 text-center font-bold text-lg" placeholder="數字">
+                <span class="font-bold text-slate-700">${inp.suffix}</span>
+              </div>
+            `;
+          });
+          contentHtml += `</div>`;
+        } else if (q.type === 'select') {
+          contentHtml += `
+            <select id="q_${q.id}" class="px-4 py-2 border-2 border-amber-300 rounded-lg font-bold text-amber-900 bg-white focus:outline-none focus:border-amber-500">
+              <option value="">-- 請選擇單位 --</option>
+              ${q.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+            </select>
+          `;
+        } else if (q.type === 'select-text') {
+          contentHtml += `
+            <div class="space-y-2">
+              ${q.options.map(opt => `
+                <label class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 cursor-pointer hover:bg-amber-100/50 transition">
+                  <input type="radio" name="q_${q.id}" value="${opt.val}" class="w-4 h-4 text-amber-600 border-gray-300 focus:ring-amber-500">
+                  <span class="font-medium text-slate-700">${opt.label}</span>
+                </label>
+              `).join('')}
+            </div>
+          `;
+        } else if (q.type === 'trail-sort') {
+          contentHtml += `<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">`;
+          for (let i = 0; i < 4; i++) {
+            contentHtml += `
+              <div class="flex items-center gap-2 bg-white p-2.5 rounded-lg border border-amber-200">
+                <span class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-1 rounded">第 ${i + 1} 短</span>
+                <select id="q_${q.id}_${i}" class="w-full px-2 py-1.5 border border-slate-300 rounded font-medium text-sm focus:outline-none focus:border-amber-500">
+                  <option value="">-- 選擇郊遊徑 --</option>
+                  ${q.trails.map(t => `<option value="${t}">${t}</option>`).join('')}
+                </select>
+              </div>
+            `;
+          }
+          contentHtml += `</div>`;
+        } else if (q.type === 'numline-q') {
+          contentHtml += `
+            <p class="text-xs text-slate-500 mt-2">提示：(a)、(b)、(c) 的答案格已在上方題目內。</p>
+          `;
+        }
+
+        contentHtml += `
+          <div id="explain_${q.id}" class="hidden mt-4 p-3 bg-white/80 rounded-lg border border-amber-200 text-sm text-slate-600">
+            <span class="font-bold text-amber-700">【解題步驟】</span><br>
+            <span id="explain_text_${q.id}">${q.explain}</span>
+          </div>
+        `;
+
+        qDiv.innerHTML = contentHtml;
+        container.appendChild(qDiv);
+      });
+    }
+
+    // ============ Firebase Logging (same protocol as math12) ============
+    const MATH13_TEST_NAME = "🚀 長度與距離（mm、cm、m、km）";
+
+    function getHKTTimestamp() {
+      const now = new Date();
+      const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+      return hkt.toISOString().replace('T', ' ').slice(0, 19);
+    }
+
+    function getSafeUsername() {
+      return (window.getUsername && window.getUsername()) || "訪客";
+    }
+
+    // Log entrance when user enters the practice (same as math11/math12 logEntrance)
+    async function logEntrance() {
+      try {
+        if (window.db && window.addDoc) {
+          await window.addDoc(window.collection(window.db, "test-log"), {
+            username: getSafeUsername(),
+            test: MATH13_TEST_NAME,
+            timestamp: getHKTTimestamp(),
+            status: "entered"
+          });
+        }
+      } catch (error) {
+        console.error("Firebase entrance logging failed:", error);
+      }
+    }
+
+    // Log incorrect answers to incorrect-log (same fields as math2/4/5/12)
+    async function saveIncorrectAnswers(records) {
+      try {
+        if (!(window.db && window.addDoc)) return;
+        const timestamp = getHKTTimestamp();
+        const promises = records.map(r =>
+          window.addDoc(window.collection(window.db, "incorrect-log"), {
+            username: getSafeUsername(),
+            question: r.question,
+            correctAnswer: r.correctAnswer,
+            studentAnswer: r.studentAnswer,
+            timestamp: timestamp
+          })
+        );
+        await Promise.all(promises);
+      } catch (error) {
+        console.error('Error saving incorrect answers:', error);
+      }
+    }
+
+    // Log completion with score + time spent (test-log, same fields as math12)
+    async function saveCompletion(totalScore, totalTimeSec) {
+      try {
+        if (!(window.db && window.addDoc)) return;
+        await window.addDoc(window.collection(window.db, "test-log"), {
+          username: getSafeUsername(),
+          test: MATH13_TEST_NAME,
+          score: totalScore,
+          timespend: Math.floor(totalTimeSec / 60) + "分" + (totalTimeSec % 60) + "秒",
+          timestamp: getHKTTimestamp()
+        });
+      } catch (error) {
+        console.error('Error saving attendance:', error);
+      }
+    }
+
+    window.onUserSet = function () {
+      logEntrance();
+    };
+
+    // ===== 防止滑鼠滾輪改變數字輸入框的數值（避免誤觸） =====
+    // 使用事件委派：頁面上所有數字輸入框（包括動態生成的）都會生效
+    document.addEventListener('wheel', (event) => {
+      if (document.activeElement && document.activeElement.type === 'number') {
+        // 只有在滾輪指向已聚焦的數字輸入框時才阻止
+        if (document.activeElement === event.target || document.activeElement.contains(event.target)) {
+          event.preventDefault();
+        }
+      }
+    }, { passive: false });
+
+    function checkAnswers() {
+      if (isSubmitted) return;   // 每次練習只記錄一次成績
+      isSubmitted = true;
+
+      // 隱藏「交卷並對答案」按鈕：學生已查看答案，需點「生成新練習」才能繼續
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) submitBtn.classList.add('hidden');
+      let score = 0;
+
+      const wrongRecords = [];
+
+      quizData.forEach(q => {
+        let isCorrect = false;
+        let studentAnswerText = '';
+        let correctAnswerText = '';
+        const explainBox = document.getElementById(`explain_${q.id}`);
+        const questionText = `第${q.id}題 ${q.title}：${String(q.prompt).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').slice(0, 60)}`;
+
+        if (q.type === 'input' || q.type === 'map-q1') {
+          const userVal = document.getElementById(`q_${q.id}`).value.trim();
+          if (userVal === q.ans) isCorrect = true;
+          if (q.ans2) {
+            const userVal2 = document.getElementById(`q_${q.id}_b`).value.trim();
+            isCorrect = isCorrect && (userVal2 === q.ans2);
+            studentAnswerText = (userVal || '未填') + ' / ' + (userVal2 || '未填');
+            correctAnswerText = q.ans + ' / ' + q.ans2;
+          } else {
+            studentAnswerText = userVal || '未填';
+            correctAnswerText = q.ans;
+          }
+        } else if (q.type === 'multi-input') {
+          let allRight = true;
+          const stuParts = [], ansParts = [];
+          q.inputs.forEach(inp => {
+            const val = document.getElementById(`q_${q.id}_${inp.key}`).value.trim();
+            if (val !== inp.ans) allRight = false;
+            stuParts.push(val || '未填');
+            ansParts.push(inp.ans);
+          });
+          if (allRight) isCorrect = true;
+          studentAnswerText = stuParts.join(' ， ');
+          correctAnswerText = ansParts.join(' ， ');
+        } else if (q.type === 'select') {
+          const userVal = document.getElementById(`q_${q.id}`).value;
+          if (userVal === q.ans) isCorrect = true;
+          studentAnswerText = userVal || '未填';
+          correctAnswerText = q.ans;
+        } else if (q.type === 'select-text') {
+          const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
+          if (selected && selected.value === q.ans) isCorrect = true;
+          studentAnswerText = selected ? selected.value : '未填';
+          correctAnswerText = q.ans;
+        } else if (q.type === 'trail-sort') {
+          let sortRight = true;
+          const stuTrail = [];
+          for (let i = 0; i < 4; i++) {
+            const val = document.getElementById(`q_${q.id}_${i}`).value;
+            if (val !== q.sortedAns[i]) sortRight = false;
+            stuTrail.push(val || '未填');
+          }
+          if (sortRight) isCorrect = true;
+          studentAnswerText = stuTrail.every(v => v === '未填') ? '未填' : stuTrail.join(' → ');
+          correctAnswerText = q.sortedAns.join(' → ');
+        } else if (q.type === 'numline-q') {
+          const a = document.getElementById(`q_${q.id}_a`).value.trim();
+          const bMM = document.getElementById(`q_${q.id}_b_mm`).value.trim();
+          const c = document.getElementById(`q_${q.id}_c`).value.trim();
+          if (a === q.ansA && bMM === q.ansBMM && c === q.ansC) isCorrect = true;
+          studentAnswerText = `${a || '未填'} / ${bMM || '未填'} / ${c || '未填'}`;
+          correctAnswerText = `${q.ansA} / ${q.ansBMM} / ${q.ansC}`;
+        }
+
+        if (isCorrect) score++;
+
+        if (!isCorrect) {
+          wrongRecords.push({
+            question: questionText,
+            correctAnswer: correctAnswerText,
+            studentAnswer: studentAnswerText
+          });
+        }
+
+        explainBox.classList.remove('hidden');
+        if (isCorrect) {
+          explainBox.classList.add('bg-green-50', 'border-green-300');
+          explainBox.classList.remove('bg-red-50', 'border-red-300');
+        } else {
+          explainBox.classList.add('bg-red-50', 'border-red-300');
+          explainBox.classList.remove('bg-green-50', 'border-green-300');
+        }
+      });
+
+      const board = document.getElementById('result-board');
+      const scoreText = document.getElementById('score-text');
+      const feedbackText = document.getElementById('feedback-text');
+
+      scoreText.innerText = `${score} / 10`;
+      if (score === 10) {
+        feedbackText.innerText = "🌟 太厲害了！全對！你已經完全掌握長度與距離的單位了！";
+      } else if (score >= 7) {
+        feedbackText.innerText = "👍 表現很好！請參閱紅框題目的【解題步驟】繼續加油！";
+      } else {
+        feedbackText.innerText = "💪 不要灰心，仔細閱讀每題的【解題步驟】，再試一次吧！";
+      }
+
+      board.classList.remove('hidden');
+      board.scrollIntoView({ behavior: 'smooth' });
+
+      // ============ Firebase logging on completion ============
+      const totalTimeSec = quizStartTime ? Math.floor((Date.now() - quizStartTime) / 1000) : 0;
+      saveCompletion(score * 10, totalTimeSec);
+      if (wrongRecords.length > 0) {
+        saveIncorrectAnswers(wrongRecords);
+      }
+    }
+
+    window.onload = function() {
+      generateQuiz();
+      // Log entrance if user already logged in (cookie set); auth.js will
+      // call window.onUserSet -> logEntrance() for fresh logins.
+      if (window.getUsername && window.getUsername() !== "訪客") {
+        logEntrance();
+      }
+    };
+  </script>
+</body>
+</html>

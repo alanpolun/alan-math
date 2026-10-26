@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理員後台｜學習記錄</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, 'Noto Sans TC', sans-serif; }
+        .row:hover { background: #eef2ff; cursor: pointer; }
+        .row.active { background: #e0e7ff; }
+    </style>
+    <!-- 停用學生登入彈窗：admin 只需要管理員密碼 -->
+    <script>window.skipAuthInit = true;</script>
+    <script type="module" src="auth.js"></script>
+</head>
+
+<body class="min-h-screen bg-slate-100 p-6">
+
+    <!-- ============ 登入閘門 ============ -->
+    <div id="loginGate" class="fixed inset-0 z-[300] flex items-center justify-center bg-slate-900/95 p-4">
+        <div class="bg-white rounded-3xl p-10 max-w-md w-full shadow-2xl text-center">
+            <div class="text-5xl mb-4">🔐</div>
+            <h1 class="text-3xl font-black text-slate-800 mb-2">管理員登入</h1>
+            <p class="text-slate-500 mb-8">請輸入管理員密碼</p>
+            <input type="password" id="adminPass" autocomplete="current-password" placeholder="密碼"
+                class="w-full text-2xl text-center border-b-4 border-indigo-400 outline-none pb-3 mb-8 bg-transparent font-bold text-indigo-700">
+            <button id="loginBtn"
+                class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xl font-bold shadow-lg active:scale-95 transition">
+                登入
+            </button>
+            <p id="loginError" class="text-red-500 font-bold mt-4 opacity-0 transition-opacity">密碼不正確</p>
+        </div>
+    </div>
+
+    <!-- ============ 後台 ============ -->
+    <div id="adminPanel" class="hidden max-w-6xl mx-auto">
+
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+            <div class="flex items-center gap-4">
+                <a style="position:relative; z-index:1000;" href="index.html#year2"
+                    class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 px-4 rounded-full">
+                    ← 返回首頁
+                </a>
+                <h1 class="text-3xl font-bold text-indigo-600">🛠️ 管理員後台</h1>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="loadAll(true)"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full">🔄 重新整理</button>
+                <button onclick="logout()"
+                    class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-full">登出</button>
+            </div>
+        </div>
+
+        <!-- 統計 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-2xl p-5 shadow text-center">
+                <div class="text-sm text-slate-500 font-bold">用戶數</div>
+                <div id="statUsers" class="text-4xl font-black text-indigo-600">–</div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow text-center">
+                <div class="text-sm text-slate-500 font-bold">練習記錄</div>
+                <div id="statTests" class="text-4xl font-black text-indigo-600">–</div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow text-center">
+                <div class="text-sm text-slate-500 font-bold">錯誤記錄</div>
+                <div id="statWrongs" class="text-4xl font-black text-red-500">–</div>
+            </div>
+            <div class="bg-white rounded-2xl p-5 shadow text-center">
+                <div class="text-sm text-slate-500 font-bold">最後更新</div>
+                <div id="statUpdated" class="text-lg font-bold text-slate-600">–</div>
+            </div>
+        </div>
+
+        <!-- 選用戶 -->
+        <div class="bg-white rounded-2xl p-6 shadow mb-6">
+            <div class="flex flex-wrap items-center gap-4">
+                <label for="userSelect" class="text-lg font-bold text-slate-700">選擇用戶：</label>
+                <select id="userSelect" onchange="selectUser(this.value)"
+                    class="text-lg font-bold px-4 py-3 border-2 border-indigo-300 rounded-xl bg-white text-indigo-800 min-w-[16rem]">
+                    <option value="">— 請選擇 —</option>
+                </select>
+                <input id="userFilter" oninput="filterUserList(this.value)" placeholder="搜尋名字…"
+                    class="px-4 py-3 border-2 border-slate-200 rounded-xl text-lg w-56">
+                <span id="loadNote" class="text-slate-400 text-sm"></span>
+            </div>
+
+            <!-- 用戶總表 -->
+            <div class="mt-5 overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-slate-500 text-sm border-b-2 border-slate-200">
+                            <th class="py-2 px-3">用戶</th>
+                            <th class="py-2 px-3">練習</th>
+                            <th class="py-2 px-3">錯誤</th>
+                            <th class="py-2 px-3">最後活動</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 記錄 -->
+        <div class="flex gap-3 mb-4">
+            <button id="tab-test" onclick="switchTab('test')"
+                class="px-6 py-3 rounded-full font-bold text-lg border-2 border-indigo-500 text-indigo-600 bg-white">📊 練習記錄</button>
+            <button id="tab-wrong" onclick="switchTab('wrong')"
+                class="px-6 py-3 rounded-full font-bold text-lg border-2 border-slate-300 text-slate-400 bg-white">❌ 錯誤記錄</button>
+            <span id="currentUserLabel" class="ml-auto self-center text-lg font-bold text-slate-500"></span>
+        </div>
+
+        <div id="logList" class="space-y-3"></div>
+        <p id="emptyNote" class="text-slate-500 text-center mt-10 hidden">此用戶暫無記錄</p>
+    </div>
+
+    <script>
+        // ===== 管理員密碼（只保存 SHA-256 雜湊，不存明文；與 alan-htalk 相同的保護方式）=====
+        const PASS_HASH = '908aaf26cdc7fb1123972d4bef89a0585f65b739d3ad84448292dd43414a8f63';
+        const AUTH_KEY = 'math_admin_auth';
+
+        async function sha256(str) {
+            if (window.crypto && window.crypto.subtle) {
+                const buf = new TextEncoder().encode(str);
+                const hash = await crypto.subtle.digest('SHA-256', buf);
+                return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+            // file:// 或非安全來源：退回 sha256.min.js
+            return new Promise((resolve, reject) => {
+                if (window.sha256) return resolve(window.sha256(str));
+                const s = document.createElement('script');
+                s.src = 'sha256.min.js';
+                s.onload = () => resolve(window.sha256(str));
+                s.onerror = () => reject(new Error('無法載入 sha256.min.js'));
+                document.head.appendChild(s);
+            });
+        }
+
+        const gate = document.getElementById('loginGate');
+        const panel = document.getElementById('adminPanel');
+        const passInput = document.getElementById('adminPass');
+        const loginError = document.getElementById('loginError');
+
+        async function tryLogin() {
+            let hash = '';
+            try { hash = await sha256(passInput.value); } catch (e) { hash = ''; }
+            if (hash === PASS_HASH) {
+                sessionStorage.setItem(AUTH_KEY, 'true');
+                gate.classList.add('hidden');
+                panel.classList.remove('hidden');
+                loadAll();
+            } else {
+                loginError.style.opacity = '1';
+                passInput.value = '';
+                passInput.classList.add('border-red-500');
+                setTimeout(() => { loginError.style.opacity = '0'; passInput.classList.remove('border-red-500'); }, 2000);
+            }
+        }
+        document.getElementById('loginBtn').onclick = tryLogin;
+        passInput.addEventListener('keypress', e => { if (e.key === 'Enter') tryLogin(); });
+
+        function logout() {
+            sessionStorage.removeItem(AUTH_KEY);
+            location.reload();
+        }
+
+        // ===== 資料 =====
+        let allTests = [], allWrongs = [], users = [], currentUser = '', currentTab = 'test';
+
+        async function waitForDb(ms = 8000) {
+            const t0 = Date.now();
+            while (!window.db && Date.now() - t0 < ms) await new Promise(r => setTimeout(r, 150));
+            return !!window.db;
+        }
+
+        const FETCH_LIMIT = 10000;   // Firestore SDK 沒有 startAfter 匯出，只好加大上限
+        let truncated = false;
+
+        async function fetchAll(coll) {
+            const q = window.query(window.collection(window.db, coll), window.limit(FETCH_LIMIT));
+            const snap = await window.getDocs(q);
+            const rows = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (rows.length === FETCH_LIMIT) truncated = true;
+            return rows;
+        }
+
+        function tsOf(r) { return r.timestamp || ''; }
+
+        async function loadAll(manual) {
+            const note = document.getElementById('loadNote');
+            note.textContent = '載入中…';
+            if (!await waitForDb()) { note.textContent = '⚠️ 未能連接 Firebase（請用 http:// 或 https:// 開啟）'; return; }
+            try {
+                const [tests, wrongs] = await Promise.all([fetchAll('test-log'), fetchAll('incorrect-log')]);
+                allTests = tests.sort((a, b) => tsOf(b).localeCompare(tsOf(a)));
+                allWrongs = wrongs.sort((a, b) => tsOf(b).localeCompare(tsOf(a)));
+
+                const map = new Map();
+                const touch = (name, kind, ts) => {
+                    if (!name) return;
+                    const u = map.get(name) || { name, tests: 0, wrongs: 0, last: '' };
+                    if (kind === 'test') u.tests++; else u.wrongs++;
+                    if (ts && ts > u.last) u.last = ts;
+                    map.set(name, u);
+                };
+                allTests.forEach(r => touch(r.username, 'test', tsOf(r)));
+                allWrongs.forEach(r => touch(r.username, 'wrong', tsOf(r)));
+                users = [...map.values()].sort((a, b) => (b.last || '').localeCompare(a.last || ''));
+
+                document.getElementById('statUsers').textContent = users.length;
+                document.getElementById('statTests').textContent = allTests.length;
+                document.getElementById('statWrongs').textContent = allWrongs.length;
+                document.getElementById('statUpdated').textContent = new Date().toLocaleTimeString('en-GB');
+                note.textContent = `已載入 ${allTests.length} 筆練習 / ${allWrongs.length} 筆錯誤記錄`
+                    + (truncated ? '（已達上限，只顯示最近 ' + FETCH_LIMIT + ' 筆）' : '');
+
+                renderUserSelect();
+                renderUserTable();
+                if (!currentUser && users.length) selectUser(users[0].name);
+                else renderLogs();
+            } catch (e) {
+                note.textContent = '載入失敗：' + e.message;
+                console.error(e);
+            }
+        }
+
+        function userOptionText(u) { return `${u.name}（練習 ${u.tests} · 錯誤 ${u.wrongs}）`; }
+
+        function renderUserSelect() {
+            const sel = document.getElementById('userSelect');
+            sel.innerHTML = '<option value="">— 請選擇 —</option>' +
+                users.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(userOptionText(u))}</option>`).join('');
+            if (currentUser) sel.value = currentUser;
+        }
+
+        function renderUserTable() {
+            const tb = document.getElementById('userTable');
+            tb.innerHTML = users.map(u => `
+                <tr class="row ${u.name === currentUser ? 'active' : ''} border-b border-slate-100" onclick="selectUser('${escapeAttr(u.name)}')">
+                    <td class="py-2 px-3 font-bold text-slate-800">${escapeHtml(u.name)}</td>
+                    <td class="py-2 px-3 text-indigo-600 font-bold">${u.tests}</td>
+                    <td class="py-2 px-3 text-red-500 font-bold">${u.wrongs}</td>
+                    <td class="py-2 px-3 text-slate-500 text-sm">${escapeHtml(u.last || '—')}</td>
+                </tr>`).join('') || '<tr><td class="py-4 text-slate-400" colspan="4">尚無任何記錄</td></tr>';
+        }
+
+        function filterUserList(q) {
+            const sel = document.getElementById('userSelect');
+            const needle = (q || '').toLowerCase();
+            sel.innerHTML = '<option value="">— 請選擇 —</option>' +
+                users.filter(u => u.name.toLowerCase().includes(needle))
+                     .map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(userOptionText(u))}</option>`).join('');
+            if (currentUser) sel.value = currentUser;
+        }
+
+        function selectUser(name) {
+            currentUser = name || '';
+            document.getElementById('userSelect').value = currentUser;
+            document.getElementById('currentUserLabel').textContent = currentUser ? `查看中：${currentUser}` : '';
+            renderUserTable();
+            renderLogs();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-test').className = tab === 'test'
+                ? 'px-6 py-3 rounded-full font-bold text-lg border-2 border-indigo-500 text-indigo-600 bg-white'
+                : 'px-6 py-3 rounded-full font-bold text-lg border-2 border-slate-300 text-slate-400 bg-white';
+            document.getElementById('tab-wrong').className = tab === 'wrong'
+                ? 'px-6 py-3 rounded-full font-bold text-lg border-2 border-indigo-500 text-indigo-600 bg-white'
+                : 'px-6 py-3 rounded-full font-bold text-lg border-2 border-slate-300 text-slate-400 bg-white';
+            renderLogs();
+        }
+
+        function renderLogs() {
+            const list = document.getElementById('logList');
+            const empty = document.getElementById('emptyNote');
+            list.innerHTML = '';
+            if (!currentUser) {
+                empty.textContent = '請先在上方選擇一位用戶';
+                empty.classList.remove('hidden');
+                return;
+            }
+            const rows = (currentTab === 'test' ? allTests : allWrongs).filter(r => r.username === currentUser);
+            if (!rows.length) {
+                empty.textContent = '此用戶暫無記錄';
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+            rows.forEach(r => list.appendChild(currentTab === 'test' ? testRow(r) : wrongRow(r)));
+        }
+
+        function testRow(r) {
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-2xl p-5 shadow border-l-8 border-indigo-400';
+            div.innerHTML = `
+                <div class="flex justify-between text-xs text-slate-400 mb-2">
+                    <span>${escapeHtml(r.username || '')}</span>
+                    <span>${escapeHtml(r.timestamp || 'N/A')}</span>
+                </div>
+                <p class="text-xl font-bold text-slate-800 mb-1">${escapeHtml(r.test || '未知試卷')}</p>
+                <p class="text-lg text-indigo-600 font-bold">
+                    ${r.timespend ? '用時：<strong>' + escapeHtml(r.timespend) + '</strong>'
+                                 : (r.score !== undefined ? '得分：<strong>' + escapeHtml(String(r.score)) + '</strong>'
+                                                          : '<span class="text-emerald-500">✨ 已進入練習</span>')}
+                </p>`;
+            return div;
+        }
+
+        function wrongRow(r) {
+            const div = document.createElement('div');
+            div.className = 'bg-white rounded-2xl p-5 shadow border-l-8 border-red-400';
+            div.innerHTML = `
+                <div class="flex justify-between text-xs text-slate-400 mb-2">
+                    <span>${escapeHtml(r.username || '')}</span>
+                    <span>${escapeHtml(r.timestamp || 'N/A')}</span>
+                </div>
+                <p class="text-lg font-bold text-slate-800 mb-2">題目：${escapeHtml(r.question || 'N/A')}</p>
+                <div class="flex flex-wrap gap-8 text-lg">
+                    <span class="text-green-600">正確答案：<strong>${escapeHtml(String(r.correctAnswer ?? 'N/A'))}</strong></span>
+                    <span class="text-red-500">學生答案：<strong>${escapeHtml(String(r.studentAnswer ?? 'N/A'))}</strong></span>
+                </div>`;
+            return div;
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        function escapeAttr(s) { return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+        // 已登入過（同一個 session）就自動進入
+        if (sessionStorage.getItem(AUTH_KEY) === 'true') {
+            gate.classList.add('hidden');
+            panel.classList.remove('hidden');
+            loadAll();
+        }
+    </script>
+</body>
+
+</html>

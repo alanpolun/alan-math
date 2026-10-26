@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小三數學互動教室：秒與時間計算（單元八、九）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+
+    /* ===== 加大字體（小三學生閱讀用）===== */
+    /* 圖示下面的說明文字、段落全部放大，因為原本 text-xs / text-sm 太細 */
+    #section-teach p { font-size: 1.25rem; line-height: 1.6; }
+    #section-teach li { font-size: 1.25rem; line-height: 1.6; }
+    #teach-sec-compare span { font-size: 1.05rem; }
+    /* 圖下方說明文字（Alan: 仲係太細） */
+    .clock-cap { font-size: 1.625rem !important; line-height: 1.4 !important;
+                 font-weight: 800 !important; color: #0f172a !important;
+                 background: #eef2ff; border-radius: 10px; padding: 6px 10px; display: block; }
+    /* 鐘面內的數字與標籤加粗，令對比更清楚 */
+    #section-teach svg text { font-weight: 700; }
+  </style>
+</head>
+<body class="bg-indigo-50 min-h-screen py-8 px-4 font-sans text-slate-800">
+
+  <!-- 返回主頁按鈕 -->
+  <a href="index.html#year3" style="position: fixed; top: 20px; left: 20px; background: #4F46E5; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index:1000;">← 返回主頁</a>
+
+  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border-4 border-indigo-300 p-6 md:p-10">
+    
+    <!-- 頁面標題 -->
+    <header class="border-b-2 border-dashed border-indigo-200 pb-6 mb-8 text-center">
+      <div class="inline-block bg-indigo-600 text-white text-xs md:text-sm font-bold px-4 py-1 rounded-full mb-2">
+        小學三年級數學科 ｜ 互動圖解教學與練習
+      </div>
+      <h1 class="text-2xl md:text-4xl font-extrabold text-slate-800 tracking-tight">
+        單元八：秒和時間量度 ＆ 單元九：24小時報時制
+      </h1>
+      <p class="text-slate-500 text-sm md:text-base mt-2">
+        透過下方「三針互動時鐘」掌握時、分、秒與時間計算，再點擊右方挑戰 10 題互動練習！
+      </p>
+
+      <!-- 頁籤切換按鈕 -->
+      <div class="flex justify-center gap-4 mt-6">
+        <button id="tab-teach-btn" onclick="switchTab('teach')" class="px-6 py-2.5 rounded-xl font-bold transition bg-indigo-600 text-white shadow-md">
+          ⏱️ 三針時鐘互動教學
+        </button>
+        <button id="tab-quiz-btn" onclick="switchTab('quiz')" class="px-6 py-2.5 rounded-xl font-bold transition bg-slate-200 text-slate-700 hover:bg-slate-300">
+          ✏️ 開始 10 題互動練習
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== 教學區 (Teach Section) ==================== -->
+    <section id="section-teach" class="space-y-8">
+      
+      <!-- 互動時鐘演示專區 -->
+      <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-6 shadow-sm">
+        <h2 class="text-xl font-extrabold text-indigo-900 mb-2 text-center">🕒 認識時鐘的三支針（時針、分針、秒針）</h2>
+        <p class="text-center text-sm text-slate-600 mb-6">點擊下方按鈕，觀察三針在鐘面上的不同長度與角色！</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <!-- 動態 SVG 三針時鐘 -->
+          <div class="bg-white p-4 rounded-xl border border-indigo-100 text-center shadow-inner">
+            <div id="demo-clock-container">
+              <!-- 由 JS 動態生成三針時鐘 -->
+            </div>
+            <div class="mt-3 flex justify-center gap-2">
+              <button onclick="updateDemoClock(10, 10, 15)" class="px-3 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-xs font-bold rounded">範例一 (10:10:15)</button>
+              <button onclick="updateDemoClock(3, 45, 30)" class="px-3 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-xs font-bold rounded">範例二 (3:45:30)</button>
+              <button onclick="updateDemoClock(11, 2, 45)" class="px-3 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-xs font-bold rounded">範例三 (11:02:45)</button>
+            </div>
+          </div>
+
+          <!-- 三針特點說明卡片 -->
+          <div class="space-y-3">
+            <div class="bg-white p-3 rounded-xl border-l-4 border-slate-800 shadow-xs flex items-center gap-3">
+              <div class="w-4 h-4 bg-slate-800 rounded-full shrink-0"></div>
+              <div>
+                <h3 class="font-bold text-slate-800 text-sm">時針（最短、最粗）</h3>
+                <p class="text-xs text-slate-600">走 1 大格是 1 小時，走 1 圈是 12 小時。</p>
+              </div>
+            </div>
+            <div class="bg-white p-3 rounded-xl border-l-4 border-blue-600 shadow-xs flex items-center gap-3">
+              <div class="w-4 h-4 bg-blue-600 rounded-full shrink-0"></div>
+              <div>
+                <h3 class="font-bold text-blue-900 text-sm">分針（中等長度）</h3>
+                <p class="text-xs text-slate-600">走 1 小格是 1 分鐘，走 1 圈是 60 分鐘（1小時）。</p>
+              </div>
+            </div>
+            <div class="bg-white p-3 rounded-xl border-l-4 border-red-600 shadow-xs flex items-center gap-3">
+              <div class="w-4 h-4 bg-red-600 rounded-full shrink-0"></div>
+              <div>
+                <h3 class="font-bold text-red-900 text-sm">秒針（最長、最幼）</h3>
+                <p class="text-xs text-slate-600">走 1 小格是 1 秒，走 1 圈是 60 秒（1分鐘）。<strong>（鐘面上最長且走得最快的針！）</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🔵 (B) 分針的秘密：數字 × 5 -->
+      <div class="bg-white border-2 border-indigo-100 rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold text-indigo-900 mb-1">🔵 分針的秘密：數字 × 5</h3>
+        <p class="text-sm text-slate-600 mb-4">藍色數字是「分鐘」。分針指住 3 → 3 × 5 ＝ <b>15 分</b>；指住 9 → <b>45 分</b>。</p>
+        <div id="teach-minute-ring" class="text-center mb-8"></div>
+        <div id="teach-minute-strip" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+      </div>
+
+      <!-- 🕗 (C) 時針在兩個數字之間 -->
+      <div class="bg-white border-2 border-indigo-100 rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold text-indigo-900 mb-1">🕗 時針在兩個數字「之間」，怎麼讀？</h3>
+        <p class="text-sm text-slate-600 mb-4">時針還未走過下一個數字，就仍然是<b>上一個數字</b>的時。睇以下三個鐘面：</p>
+        <div id="teach-hour-between" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+      </div>
+
+      <!-- 時間計算黃金口訣卡片 -->
+      <div class="grid grid-cols-1 gap-6">
+        <div class="bg-white border-2 border-indigo-100 rounded-2xl p-6 shadow-sm space-y-3">
+          <h3 class="text-lg font-bold text-indigo-900 flex items-center gap-2">
+            <span>⚡</span> 時間前後推算口訣
+          </h3>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="bg-indigo-50 p-2.5 rounded-lg">• <b>求結束時間</b> ➔ <span class="text-indigo-700 font-bold">開始時間 ＋ 經過時間 ＝ 結束時間</span></li>
+            <li class="bg-indigo-50 p-2.5 rounded-lg">• <b>求開始時間</b> ➔ <span class="text-indigo-700 font-bold">結束時間 － 經過時間 ＝ 開始時間</span></li>
+            <li class="bg-indigo-50 p-2.5 rounded-lg">• <b>求經過時間</b> ➔ <span class="text-indigo-700 font-bold">結束時間 － 開始時間 ＝ 經過時間</span></li>
+          </ul>
+        </div>
+
+        <div class="bg-white border-2 border-indigo-100 rounded-2xl p-6 shadow-sm space-y-3">
+          <h3 class="text-lg font-bold text-indigo-900 flex items-center gap-2">
+            <span>💡</span> 生活應用題秒殺秘笈
+          </h3>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="bg-amber-50 p-2.5 rounded-lg border border-amber-200">• <b>自助晚餐限時</b>：入座時間 ＋ 限時小時 ＝ 最遲結帳時間。</li>
+            <li class="bg-amber-50 p-2.5 rounded-lg border border-amber-200">• <b>泊車收費</b>：先算首小時費用，再把餘下時間拆成「半小時」計算。</li>
+            <li class="bg-amber-50 p-2.5 rounded-lg border border-amber-200">• <b>講座遲到</b>：原定時間 ＋ 遲到分鐘 ＝ 實際開始時間。</li>
+          </ul>
+          <div id="teach-life" class="space-y-3 pt-1"></div>
+        </div>
+      </div>
+
+      <!-- 🕐 (D) 經過時間 = 結束 － 開始 -->
+      <div class="bg-white border-2 border-indigo-100 rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold text-indigo-900 mb-1">🕐 怎樣計算「經過時間」？</h3>
+        <p class="text-sm text-slate-600 mb-4">睇住兩個鐘面，由「開始」行到「結束」，數一數分針行了多少格。</p>
+        <div id="teach-elapsed" class="space-y-4"></div>
+      </div>
+
+      <!-- ➕➖ (E) 求結束時間 / 求開始時間 -->
+      <div class="grid grid-cols-1 gap-6">
+        <div class="bg-white border-2 border-emerald-100 rounded-2xl p-6 shadow-sm">
+          <h3 class="text-lg font-bold text-emerald-800 mb-3">➕ 求結束時間（用加）</h3>
+          <div id="teach-add"></div>
+        </div>
+        <div class="bg-white border-2 border-rose-100 rounded-2xl p-6 shadow-sm">
+          <h3 class="text-lg font-bold text-rose-800 mb-3">➖ 求開始時間（用減）</h3>
+          <div id="teach-sub"></div>
+        </div>
+      </div>
+
+      <!-- 🌗 (F) 24 小時報時制 -->
+      <div class="bg-white border-2 border-indigo-100 rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold text-indigo-900 mb-1">🌗 24 小時報時制：同一個鐘面，兩種寫法</h3>
+        <p class="text-sm text-slate-600 mb-4">下午的時間要 <b>＋12</b>；上午的時間照抄。睇鐘面，再睇下面的電子鐘寫法。</p>
+        <div id="teach-24h" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+      </div>
+
+      <!-- ⏱️ (G) 秒：秒針、讀秒、經過秒數、秒錶、換算、比較 -->
+      <div class="bg-white border-2 border-amber-100 rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold text-amber-900 mb-1">⏱️ 秒（Second）：最長最幼的秒針</h3>
+        <p class="text-sm text-slate-600 mb-4">秒針走 <b>1 小格 ＝ 1 秒</b>；走完 <b>1 圈（60 小格）＝ 60 秒 ＝ 1 分鐘</b>。秒針指住邊個數字，就是 <b>5 × 數字</b> 秒。</p>
+        <div id="teach-second" class="text-center mb-8"></div>
+        <div id="teach-sec-read" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+      </div>
+
+      <!-- 經過了多少秒：兩個鐘面相減 -->
+      <div class="bg-white border-2 border-amber-100 rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold text-amber-900 mb-1">🕐 經過了多少秒？睇秒針走了多少格</h3>
+        <p class="text-sm text-slate-600 mb-4">時針、分針都沒有動，只有<b>紅色秒針</b>在走。由 12 出發，秒針停在邊個數字，就是走了 5 × 數字 秒。</p>
+        <div id="teach-sec-pairs" class="space-y-4"></div>
+      </div>
+
+      <!-- 電子秒錶 -->
+      <div class="bg-white border-2 border-amber-100 rounded-2xl p-6 shadow-sm">
+        <h3 class="text-lg font-bold text-amber-900 mb-1">⏲️ 電子秒錶怎樣讀？</h3>
+        <p class="text-sm text-slate-600 mb-4">秒錶寫法是「分:秒」，右邊兩位就是秒。由 00:00 開始，停在 00:36 就是 36 秒。</p>
+        <div id="teach-sec-stopwatch" class="grid grid-cols-1 sm:grid-cols-2 gap-5"></div>
+      </div>
+
+      <!-- 換算 + 比較 -->
+      <div class="grid grid-cols-1 gap-6">
+        <div class="bg-white border-2 border-amber-100 rounded-2xl p-6 shadow-sm">
+          <h3 class="text-lg font-bold text-amber-900 mb-3">🔁 換算：1 分鐘 ＝ 60 秒</h3>
+          <div id="teach-sec-convert" class="space-y-2"></div>
+        </div>
+        <div class="bg-white border-2 border-amber-100 rounded-2xl p-6 shadow-sm">
+          <h3 class="text-lg font-bold text-amber-900 mb-3">🏁 誰穿鞋最快？比一比</h3>
+          <div id="teach-sec-compare" class="space-y-2"></div>
+          <p class="text-xs font-bold text-emerald-700 mt-2">時間最短 ＝ 最快。子聰只用 10 秒，最快！</p>
+        </div>
+      </div>
+
+      <div class="text-center pt-2">
+        <!-- Alan 2026-10-22: 這個按鈕要跳去 math15.html 做練習（不是 math14 內置的練習分頁） -->
+        <a href="math15.html" class="inline-block px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition text-lg">
+          🚀 觀念清晰了！馬上挑戰 10 題互動練習 ➔
+        </a>
+      </div>
+
+    </section>
+
+    <!-- ==================== 練習區 (Quiz Section) ==================== -->
+    <section id="section-quiz" class="hidden space-y-8">
+      
+      <form id="quiz-form" class="space-y-8">
+        <div id="questions-container" class="space-y-8">
+          <!-- 題目由 JavaScript 動態生成 -->
+        </div>
+
+        <!-- 操作按鈕區 -->
+        <div class="pt-6 border-t-2 border-indigo-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <button type="button" onclick="generateQuiz()" class="w-full sm:w-auto px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition flex items-center justify-center gap-2">
+            🔄 生成新一輪練習
+          </button>
+          <button type="button" id="submit-btn" onclick="checkAnswers()" class="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+            ✏️ 交卷並查看名師詳解
+          </button>
+        </div>
+      </form>
+
+      <!-- 成績與解析展示區 -->
+      <div id="result-board" class="hidden mt-8 p-6 bg-slate-50 rounded-xl border-2 border-slate-200">
+        <div class="text-center mb-6">
+          <span class="text-sm font-semibold text-slate-500">練習得分</span>
+          <div id="score-text" class="text-4xl font-black text-indigo-600 my-1">0 / 10</div>
+          <p id="feedback-text" class="text-slate-600 font-medium"></p>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      const teachSec = document.getElementById('section-teach');
+      const quizSec = document.getElementById('section-quiz');
+      const teachBtn = document.getElementById('tab-teach-btn');
+      const quizBtn = document.getElementById('tab-quiz-btn');
+
+      if (tab === 'teach') {
+        teachSec.classList.remove('hidden');
+        quizSec.classList.add('hidden');
+        teachBtn.className = "px-6 py-2.5 rounded-xl font-bold transition bg-indigo-600 text-white shadow-md";
+        quizBtn.className = "px-6 py-2.5 rounded-xl font-bold transition bg-slate-200 text-slate-700 hover:bg-slate-300";
+      } else {
+        teachSec.classList.add('hidden');
+        quizSec.classList.remove('hidden');
+        quizBtn.className = "px-6 py-2.5 rounded-xl font-bold transition bg-indigo-600 text-white shadow-md";
+        teachBtn.className = "px-6 py-2.5 rounded-xl font-bold transition bg-slate-200 text-slate-700 hover:bg-slate-300";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function drawClock(hour, minute, second = null, label = "") {
+      const cx = 100, cy = 100, r = 85;
+      let ticks = '';
+      for (let i = 0; i < 60; i++) {
+        const angle = (i * 6 - 90) * (Math.PI / 180);
+        const isHour = i % 5 === 0;
+        const outerR = r - 5;
+        const innerR = isHour ? r - 14 : r - 9;
+        const x1 = cx + outerR * Math.cos(angle);
+        const y1 = cy + outerR * Math.sin(angle);
+        const x2 = cx + innerR * Math.cos(angle);
+        const y2 = cy + innerR * Math.sin(angle);
+        ticks += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${isHour ? '#334155' : '#94a3b8'}" stroke-width="${isHour ? 2 : 1}"/>`;
+      }
+      for (let i = 1; i <= 12; i++) {
+        const angle = (i * 30 - 90) * (Math.PI / 180);
+        const tx = cx + (r - 27) * Math.cos(angle);
+        const ty = cy + (r - 27) * Math.sin(angle);
+        ticks += `<text x="${tx}" y="${ty + 7}" font-size="19.2" text-anchor="middle" font-weight="bold" fill="#1e293b">${i}</text>`;
+      }
+
+      const hAngle = ((hour % 12) + minute / 60) * 30 - 90;
+      const mAngle = minute * 6 - 90;
+      
+      const hx = cx + 45 * Math.cos(hAngle * Math.PI / 180);
+      const hy = cy + 45 * Math.sin(hAngle * Math.PI / 180);
+      const mx = cx + 65 * Math.cos(mAngle * Math.PI / 180);
+      const my = cy + 65 * Math.sin(mAngle * Math.PI / 180);
+
+      let sHand = '';
+      if (second !== null) {
+        const sAngle = second * 6 - 90;
+        const sx = cx + 72 * Math.cos(sAngle * Math.PI / 180);
+        const sy = cy + 72 * Math.sin(sAngle * Math.PI / 180);
+        sHand = `<line x1="${cx}" y1="${cy}" x2="${sx}" y2="${sy}" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"/>`;
+      }
+
+      const labelSize = label.length > 14 ? 16 : (label.length > 10 ? 20 : 26);
+      let labelHtml = label ? `<text x="${cx}" y="215" font-size="${labelSize}" font-weight="bold" text-anchor="middle" fill="#4f46e5">${label}</text>` : '';
+
+      return `
+      <svg viewBox="0 0 200 240" class="w-full max-w-[288px] mx-auto my-2" role="img" aria-label="三針時鐘">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="#ffffff" stroke="#475569" stroke-width="4"/>
+        ${ticks}
+        <line x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="#0f172a" stroke-width="5" stroke-linecap="round"/>
+        <line x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round"/>
+        ${sHand}
+        <circle cx="${cx}" cy="${cy}" r="5" fill="#0f172a"/>
+        ${labelHtml}
+      </svg>`;
+    }
+
+    function updateDemoClock(h, m, s) {
+      const container = document.getElementById('demo-clock-container');
+      if (container) {
+        container.innerHTML = drawClock(h, m, s, `${h}:${m}:${s}`);
+      }
+    }
+
+    function drawClockPair(h1, m1, label1, h2, m2, label2) {
+      return `
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 my-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-200">
+        <div class="text-center">${drawClock(h1, m1, null, label1)}</div>
+        <div class="text-3xl font-black text-indigo-500 animate-pulse">➔</div>
+        <div class="text-center">${drawClock(h2, m2, null, label2)}</div>
+      </div>`;
+    }
+
+    // ==================== 教學區圖解（小三：多圖少字） ====================
+
+    // 鐘面 + 外圈藍色「分鐘」數字（5、10、…、60）
+    function drawClockMinuteRing(hour, minute, label = "") {
+      const cx = 100, cy = 100, r = 85;
+      let ring = '';
+      for (let i = 1; i <= 12; i++) {
+        const mins = i * 5;
+        const angle = (mins * 6 - 90) * (Math.PI / 180);
+        const tx = cx + (r + 19) * Math.cos(angle);
+        const ty = cy + (r + 19) * Math.sin(angle);
+        ring += `<text x="${tx}" y="${ty + 5}" font-size="22" font-weight="bold" text-anchor="middle" fill="#1d4ed8">${mins}</text>`;
+      }
+      return drawClock(hour, minute, null, label)
+        .replace('viewBox="0 0 200 240"', 'viewBox="-38 -38 276 316"')
+        // 這個鐘面外面有一圈藍色分鐘數字，最下面的「30」會壓住說明文字，
+        // 所以把說明文字再推低，讓它落在 30 之下（Alan 2026-10-22）
+        .replace('y="215"', 'y="241"')
+        .replace('</svg>', ring + '</svg>');
+    }
+
+    // 一張小時鐘卡（鐘面 + 標題 + 一句說明）
+    function teachCard(h, m, title, note, tone = "indigo") {
+      return `<div class="bg-${tone}-50/70 p-3 rounded-xl border border-${tone}-100 text-center">
+        ${drawClock(h, m, null, title)}
+        <p class="clock-cap mt-2">${note}</p>
+      </div>`;
+    }
+
+    // 兩個鐘面中間夾一個操作符（➔ / ＋35 分 / －25 分）+ 一句算式
+    function teachEquation(h1, m1, op, h2, m2, label1, label2, caption, tone = "indigo") {
+      return `<div class="bg-white border border-${tone}-100 rounded-xl p-4 shadow-sm">
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div class="text-center">${drawClock(h1, m1, null, label1)}</div>
+          <div class="px-2 py-1 rounded-full bg-${tone}-100 text-${tone}-800 text-sm font-black whitespace-nowrap">${op}</div>
+          <div class="text-center">${drawClock(h2, m2, null, label2)}</div>
+        </div>
+        <p class="clock-cap text-center mt-2 bg-${tone}-50 rounded-lg py-2 px-2">${caption}</p>
+      </div>`;
+    }
+
+    // 24 小時報時制：鐘面 + 上午/下午 + 電子鐘寫法
+    function teach24(h, m, spoken, digital, hint) {
+      return `<div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 text-center">
+        ${drawClock(h % 12 === 0 ? 12 : h % 12, m, null, spoken)}
+        <div class="mt-1 font-mono text-2xl font-black text-indigo-700 tracking-wider">${digital}</div>
+        <p class="clock-cap text-slate-700">${spoken}　<span class="text-emerald-700">（${hint}）</span></p>
+      </div>`;
+    }
+
+    // ===== 秒（Second）專用 =====
+    // 鐘面 + 紅色秒針
+    function teachSecondCard(h, m, s, title, note) {
+      return `<div class="bg-amber-50/70 p-3 rounded-xl border border-amber-100 text-center">
+        ${drawClock(h, m, s, title)}
+        <p class="clock-cap mt-2">${note}</p>
+      </div>`;
+    }
+
+    // 兩個鐘面（含秒針）＋ 中間箭頭 ＋ 一句算式
+    function teachSecondPair(h1, m1, s1, l1, h2, m2, s2, l2, caption) {
+      return `<div class="bg-white border border-amber-100 rounded-xl p-4 shadow-sm">
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div class="text-center">${drawClock(h1, m1, s1, l1)}</div>
+          <div class="px-2 py-1 rounded-full bg-amber-100 text-amber-800 text-sm font-black whitespace-nowrap">➔</div>
+          <div class="text-center">${drawClock(h2, m2, s2, l2)}</div>
+        </div>
+        <p class="clock-cap text-center mt-2 bg-amber-50 rounded-lg py-2 px-2">${caption}</p>
+      </div>`;
+    }
+
+    // 秒錶卡：秒錶 + 一句說明
+    function teachStopwatchCard(seconds, caption) {
+      return `<div class="bg-white border border-amber-100 rounded-xl p-3 text-center shadow-sm">
+        ${drawDigitalStopwatch(seconds)}
+        <p class="text-sm font-bold text-slate-700 leading-snug">${caption}</p>
+      </div>`;
+    }
+
+    // 比較用橫向棒（越短 ＝ 越快）
+    function teachBar(name, secs, maxSecs, color) {
+      const pct = Math.max(8, Math.round(secs / maxSecs * 100));
+      return `<div class="flex items-center gap-2">
+        <span class="w-16 shrink-0 text-lg font-bold text-slate-800">${name}</span>
+        <div class="flex-1 bg-slate-100 rounded-full h-7 overflow-hidden">
+          <div class="h-7 ${color} text-base font-black text-white text-right pr-3 leading-7" style="width:${pct}%">${secs} 秒</div>
+        </div>
+      </div>`;
+    }
+
+    function renderTeachClocks() {
+      const ring = document.getElementById('teach-minute-ring');
+      if (ring) ring.innerHTML = drawClockMinuteRing(3, 45, '分針指住 9 ＝ 45 分');
+
+      const strip = document.getElementById('teach-minute-strip');
+      if (strip) strip.innerHTML = [
+        teachCard(12, 0, '12:00', '分針指住 <b>12</b> ＝ <b>0 分</b>'),
+        teachCard(12, 15, '12:15', '分針指住 <b>3</b> ＝ <b>15 分</b>'),
+        teachCard(12, 30, '12:30', '分針指住 <b>6</b> ＝ <b>30 分</b>'),
+        teachCard(12, 45, '12:45', '分針指住 <b>9</b> ＝ <b>45 分</b>')
+      ].join('');
+
+      const hb = document.getElementById('teach-hour-between');
+      if (hb) hb.innerHTML = [
+        teachCard(3, 45, '3:45', '時針在 3 與 4 之間 → <b>3 時</b> 45 分'),
+        teachCard(8, 30, '8:30', '時針在 8 與 9 中間 → <b>8 時</b> 30 分'),
+        teachCard(12, 55, '12:55', '時針幾乎到 1，但仍是 <b>12 時</b> 55 分')
+      ].join('');
+
+      const el = document.getElementById('teach-elapsed');
+      if (el) el.innerHTML = [
+        teachEquation(3, 20, '➔', 3, 50, '開始 3:20', '結束 3:50',
+          '3 時 50 分 － 3 時 20 分 ＝ <b>30 分鐘</b>'),
+        teachEquation(7, 45, '➔', 8, 15, '開始 7:45', '結束 8:15',
+          '7:45 到 8:00 是 15 分，再加 15 分 ＝ <b>30 分鐘</b>（分針跨過 12）')
+      ].join('');
+
+      const add = document.getElementById('teach-add');
+      if (add) add.innerHTML = teachEquation(4, 10, '＋35 分', 4, 45, '開始 4:10', '結束 4:45',
+        '10 分 ＋ 35 分 ＝ 45 分 → <b>4 時 45 分</b>', 'emerald');
+
+      const sub = document.getElementById('teach-sub');
+      if (sub) sub.innerHTML = teachEquation(9, 20, '－25 分', 8, 55, '結束 9:20', '開始 8:55',
+        '20 分不夠減 25 分 → 向 9 時借 1 小時：80 － 25 ＝ 55 分 → <b>8 時 55 分</b>', 'rose');
+
+      const h24 = document.getElementById('teach-24h');
+      if (h24) h24.innerHTML = [
+        teach24(7, 0, '上午 7 時', '07:00', '照抄'),
+        teach24(12, 0, '中午 12 時', '12:00', '照抄'),
+        teach24(13, 0, '下午 1 時', '13:00', '1 ＋ 12'),
+        teach24(20, 30, '下午 8 時 30 分', '20:30', '8 ＋ 12')
+      ].join('');
+
+      const sec = document.getElementById('teach-second');
+      if (sec) sec.innerHTML = drawClock(12, 0, 15, '12:00:15');
+
+      const secRead = document.getElementById('teach-sec-read');
+      if (secRead) secRead.innerHTML = [
+        teachSecondCard(12, 0, 15, '秒針指 3', '<b>5 × 3 ＝ 15 秒</b>'),
+        teachSecondCard(12, 0, 30, '秒針指 6', '<b>5 × 6 ＝ 30 秒</b>'),
+        teachSecondCard(12, 0, 45, '秒針指 9', '<b>5 × 9 ＝ 45 秒</b>'),
+        teachSecondCard(12, 0, 10, '秒針指 2', '<b>5 × 2 ＝ 10 秒</b>')
+      ].join('');
+
+      const secPairs = document.getElementById('teach-sec-pairs');
+      if (secPairs) secPairs.innerHTML = [
+        teachSecondPair(12, 0, 0, '開始 12:00:00', 12, 0, 15, '結束 12:00:15',
+          '秒針由 12 走到 3：走了 3 大格 ＝ <b>15 秒</b>'),
+        teachSecondPair(12, 0, 0, '開始 12:00:00', 12, 0, 45, '結束 12:00:45',
+          '秒針由 12 走到 9：走了 9 大格 ＝ <b>45 秒</b>'),
+        teachSecondPair(12, 0, 0, '開始 12:00:00', 12, 0, 10, '結束 12:00:10',
+          '秒針由 12 走到 2：走了 2 大格 ＝ <b>10 秒</b>')
+      ].join('');
+
+      const secSw = document.getElementById('teach-sec-stopwatch');
+      if (secSw) secSw.innerHTML = [
+        teachStopwatchCard(36, '宇森穿鞋：00:00 ➔ 00:36 ＝ <b>36 秒</b>'),
+        teachStopwatchCard(50, '還原魔方：00:00 ➔ 00:50 ＝ <b>50 秒</b>')
+      ].join('');
+
+      const secConv = document.getElementById('teach-sec-convert');
+      if (secConv) secConv.innerHTML = [
+        '1 分鐘 ＝ <b class="text-amber-700">60 秒</b>',
+        '2 分鐘 ＝ 2 × 60 ＝ <b class="text-amber-700">120 秒</b>',
+        '90 秒 ＝ 60 秒 ＋ 30 秒 ＝ <b class="text-amber-700">1 分 30 秒</b>',
+        '45 秒 ＋ 15 秒 ＝ 60 秒 ＝ <b class="text-amber-700">1 分鐘</b>'
+      ].map(t => `<div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-sm font-bold text-slate-700">${t}</div>`).join('');
+
+      const secCmp = document.getElementById('teach-sec-compare');
+      if (secCmp) secCmp.innerHTML = [
+        teachBar('子聰', 10, 45, 'bg-emerald-500'),
+        teachBar('柏謙', 15, 45, 'bg-indigo-400'),
+        teachBar('宇森', 36, 45, 'bg-amber-400'),
+        teachBar('曉琳', 45, 45, 'bg-rose-400')
+      ].join('');
+
+      const life = document.getElementById('teach-life');
+      if (life) life.innerHTML = [
+        teachEquation(6, 30, '＋2 小時', 8, 30, '入座 6:30', '結帳 8:30',
+          '自助晚餐限時 2 小時：6 時 30 分 ＋ 2 小時 ＝ <b>8 時 30 分</b>', 'amber'),
+        teachEquation(12, 37, '➔', 2, 37, '12:37 入場', '2:37 離場',
+          '泊車 12:37 到 2:37 共 <b>2 小時</b>：首 1 小時 $25，之後 2 個半小時 $15 × 2', 'amber'),
+        teachEquation(8, 30, '＋18 分', 8, 48, '原定 8:30', '實際 8:48',
+          '講座遲了 18 分鐘：8 時 30 分 ＋ 18 分 ＝ <b>8 時 48 分</b>', 'amber')
+      ].join('');
+    }
+
+    function drawDigitalStopwatch(seconds) {
+      const secStr = seconds < 10 ? '0' + seconds : seconds;
+      return `
+      <svg viewBox="0 0 220 80" class="w-full max-w-[320px] mx-auto my-3" role="img" aria-label="電子秒錶">
+        <rect x="10" y="10" width="200" height="60" rx="10" fill="#1e293b" stroke="#64748b" stroke-width="3"/>
+        <rect x="25" y="20" width="170" height="40" rx="5" fill="#0284c7" />
+        <text x="110" y="48" font-family="monospace" font-size="30" font-weight="bold" fill="#ffffff" text-anchor="middle">00:${secStr}</text>
+      </svg>`;
+    }
+
+    let quizData = [];
+    let isSubmitted = false;
+
+    function generateQuiz() {
+      quizData = [];
+      isSubmitted = false;
+      const container = document.getElementById('questions-container');
+      if (!container) return;
+      container.innerHTML = '';
+      const resultBoard = document.getElementById('result-board');
+      if (resultBoard) resultBoard.classList.add('hidden');
+
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) submitBtn.classList.remove('hidden');
+
+      quizData.push({
+        id: 1, type: 'select', title: '時鐘指針認識',
+        prompt: `觀察鐘面，哪一支指針最長且走得最快？<br>${drawClock(10, 10, 15, '讀數練習')} `,
+        options: ['時針', '分針', '秒針'],
+        ans: '秒針',
+        explain: `在標準鐘面上，秒針是所有指針中最長、最幼且走得最快的。`
+      });
+
+      const q2_h = getRandomInt(1, 11);
+      const q2_m = getRandomInt(0, 11) * 5;
+      quizData.push({
+        id: 2, type: 'multi-input', title: '看鐘面讀時間',
+        prompt: `觀察右面的鐘面（含秒針），現在是幾時幾分？<br>${drawClock(q2_h, q2_m, 30, '當前時刻')}`,
+        inputs: [
+          { suffix: ' 時', key: 'h', ans: q2_h.toString() },
+          { suffix: ' 分', key: 'm', ans: q2_m.toString() }
+        ],
+        explain: `時針指向 ${q2_h} 附近，分針指向 ${q2_m / 5}（代表 ${q2_m} 分），因此是 ${q2_h} 時 ${q2_m} 分。`
+      });
+
+      quizData.push({
+        id: 3, type: 'select', title: '單位換算',
+        prompt: `秒針走 1 圈（即 60 小格），時間過了多少？`,
+        options: ['1 秒', '1 分鐘', '1 小時', '24 小時'],
+        ans: '1 分鐘',
+        explain: `秒針走 1 小格是 1 秒，走完一整圈 60 小格就是 60 秒，等於 1 分鐘。`
+      });
+
+      const secVal = getRandomInt(20, 50);
+      quizData.push({
+        id: 4, type: 'select-text', title: '電子秒錶讀數',
+        prompt: `以下電子秒錶顯示同學還原魔方的時間：<br>${drawDigitalStopwatch(secVal)}<br>他還原魔方一共用了多少秒？`,
+        options: [
+          { label: `A. ${secVal} 秒`, val: `${secVal}` },
+          { label: `B. ${secVal - 5} 秒`, val: `${secVal - 5}` },
+          { label: `C. ${secVal + 5} 秒`, val: `${secVal + 5}` },
+          { label: `D. 60 秒`, val: "60" }
+        ],
+        ans: `${secVal}`,
+        explain: `電子秒錶顯示「00:${secVal < 10 ? '0' + secVal : secVal}」，代表經過了 ${secVal} 秒。`
+      });
+
+      const startH = getRandomInt(2, 5);
+      const startM = getRandomInt(0, 4) * 5;
+      const durationM = getRandomInt(20, 35);
+      let totalM = startH * 60 + startM + durationM;
+      const endH = Math.floor(totalM / 60);
+      const endM = totalM % 60;
+      quizData.push({
+        id: 5, type: 'input', title: '看圖計算經過時間',
+        prompt: `觀察以下由開始到結束的鐘面變化：<br>${drawClockPair(startH, startM, '開始', endH, endM, '結束')}<br>這項活動共進行了多少分鐘？`,
+        suffix: ' 分鐘', ans: durationM.toString(),
+        explain: `結束時間減去開始時間：${endH * 60 + endM} － ${startH * 60 + startM} ＝ ${durationM} 分鐘。`
+      });
+
+      const sH = getRandomInt(1, 4);
+      const sM = getRandomInt(10, 25);
+      const addM = getRandomInt(20, 35);
+      let targetM = sH * 60 + sM + addM;
+      const targetH = Math.floor(targetM / 60);
+      const targetMin = targetM % 60;
+      quizData.push({
+        id: 6, type: 'multi-input', title: '推算結束時間',
+        prompt: `右面鐘面顯示柏謙開始做功課的時間：<br>${drawClock(sH, sM, 0, '開始做功課')}<br>他做了 ${addM} 分鐘功課，他在何時完成？`,
+        inputs: [
+          { suffix: ' 時', key: 'h', ans: targetH.toString() },
+          { suffix: ' 分', key: 'm', ans: targetMin.toString() }
+        ],
+        explain: `開始時間加上持續時間：${sM} ＋ ${addM} ＝ ${sM + addM} 分。完成時間為 ${targetH} 時 ${targetMin} 分。`
+      });
+
+      const eH = getRandomInt(6, 9);
+      const eM = getRandomInt(40, 55);
+      const subM = getRandomInt(15, 30);
+      let origTotalM = eH * 60 + eM - subM;
+      const origH = Math.floor(origTotalM / 60);
+      const origMin = origTotalM % 60;
+      quizData.push({
+        id: 7, type: 'multi-input', title: '推算開始時間',
+        prompt: `表姐表演完結時的鐘面如下：<br>${drawClock(eH, eM, 0, '表演完成')}<br>她在舞台上表演了 ${subM} 分鐘，她在何時開始表演？`,
+        inputs: [
+          { suffix: ' 時', key: 'h', ans: origH.toString() },
+          { suffix: ' 分', key: 'm', ans: origMin.toString() }
+        ],
+        explain: `完成時間減去表演時間：${eM} － ${subM} ＝ ${origMin} 分。開始時間是 ${origH} 時 ${origMin} 分。`
+      });
+
+      const arrH = getRandomInt(8, 10);
+      const lunchH = 12;
+      const stayedH = lunchH - arrH;
+      quizData.push({
+        id: 8, type: 'input', title: '計算逗留時間',
+        prompt: `志文在上午 ${arrH} 時到達渡假村。他在下午 ${lunchH} 時去吃午飯，他在渡假村已逗留了多少小時？`,
+        suffix: ' 小時', ans: stayedH.toString(),
+        explain: `由上午 ${arrH} 時至下午 ${lunchH} 時：${lunchH} － ${arrH} ＝ ${stayedH} 小時。`
+      });
+
+      quizData.push({
+        id: 9, type: 'select-text', title: '講座延誤與結束計算',
+        prompt: `某講座原定在上午 8 時 30 分開始，但實際開始時間遲了 18 分鐘。講座進行了 4 小時，即講座在甚麼時間結束？`,
+        options: [
+          { label: "A. 上午 8 時 48 分", val: "A" },
+          { label: "B. 下午 12 時 12 分", val: "B" },
+          { label: "C. 下午 12 時 30 分", val: "C" },
+          { label: "D. 下午 12 時 48 分", val: "D" }
+        ],
+        ans: "D",
+        explain: `實際開始時間 = 8:30 ＋ 18分鐘 ＝ 8:48 分。加上 4 小時後 ＝ 12:48 pm（即下午 12 時 48 分）。`
+      });
+
+      quizData.push({
+        id: 10, type: 'select-text', title: '停車場收費應用題',
+        prompt: `停車場收費：首小時 $25，以後每半小時 $15。<br>媽媽在下午 12:37 把車駛進停車場，在下午 2:37 駕車離開。媽媽共需付多少元？`,
+        options: [
+          { label: "A. 55元", val: "A" },
+          { label: "B. 50元", val: "B" },
+          { label: "C. 45元", val: "C" },
+          { label: "D. 40元", val: "D" }
+        ],
+        ans: "A",
+        explain: `泊車共 2 小時。首 1 小時 $25；餘下 1 小時（等於 2 個半小時）收費 $15 × 2 ＝ $30。總費用 ＝ $25 ＋ $30 ＝ 55 元。`
+      });
+
+      quizData.forEach((q, idx) => {
+        const qDiv = document.createElement('div');
+        qDiv.className = 'bg-indigo-50/50 rounded-xl p-5 border border-indigo-200';
+        
+        let contentHtml = `
+          <div class="flex items-center gap-2 mb-3">
+            <span class="bg-indigo-600 text-white font-bold text-xs px-2.5 py-1 rounded-md">第 ${idx + 1} 題</span>
+            <span class="text-xs font-semibold text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded">${q.title}</span>
+          </div>
+          <div class="text-slate-800 font-medium text-base md:text-lg mb-4 leading-relaxed">${q.prompt}</div>
+        `;
+
+        if (q.type === 'input') {
+          contentHtml += `
+            <div class="flex items-center gap-2">
+              <input type="number" id="q_${q.id}" class="w-32 px-3 py-2 border-2 border-indigo-300 rounded-lg focus:outline-none focus:border-indigo-500 text-center font-bold text-lg" placeholder="答案">
+              <span class="font-bold text-slate-700">${q.suffix || ''}</span>
+            </div>
+          `;
+        } else if (q.type === 'multi-input') {
+          contentHtml += `<div class="flex flex-wrap items-center gap-3">`;
+          q.inputs.forEach(inp => {
+            contentHtml += `
+              <div class="flex items-center gap-1">
+                <input type="number" id="q_${q.id}_${inp.key}" class="w-24 px-3 py-2 border-2 border-indigo-300 rounded-lg focus:outline-none focus:border-indigo-500 text-center font-bold text-lg" placeholder="數字">
+                <span class="font-bold text-slate-700">${inp.suffix}</span>
+              </div>
+            `;
+          });
+          contentHtml += `</div>`;
+        } else if (q.type === 'select') {
+          contentHtml += `
+            <select id="q_${q.id}" class="px-4 py-2 border-2 border-indigo-300 rounded-lg font-bold text-indigo-900 bg-white focus:outline-none focus:border-indigo-500">
+              <option value="">-- 請選擇答案 --</option>
+              ${q.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+            </select>
+          `;
+        } else if (q.type === 'select-text') {
+          contentHtml += `
+            <div class="space-y-2">
+              ${q.options.map(opt => `
+                <label class="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 cursor-pointer hover:bg-indigo-100/50 transition">
+                  <input type="radio" name="q_${q.id}" value="${opt.val}" class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                  <span class="font-medium text-slate-700">${opt.label}</span>
+                </label>
+              `).join('')}
+            </div>
+          `;
+        }
+
+        contentHtml += `
+          <div id="explain_${q.id}" class="hidden mt-4 p-3 bg-white/90 rounded-lg border border-indigo-200 text-sm text-slate-600">
+            <span class="font-bold text-indigo-700">【名師詳解】</span><br>
+            <span id="explain_text_${q.id}">${q.explain}</span>
+          </div>
+        `;
+
+        qDiv.innerHTML = contentHtml;
+        container.appendChild(qDiv);
+      });
+    }
+
+    function checkAnswers() {
+      if (isSubmitted) return;
+      isSubmitted = true;
+
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) submitBtn.classList.add('hidden');
+      let score = 0;
+
+      quizData.forEach(q => {
+        let isCorrect = false;
+        const explainBox = document.getElementById(`explain_${q.id}`);
+
+        if (q.type === 'input') {
+          const userVal = document.getElementById(`q_${q.id}`).value.trim();
+          if (userVal === q.ans) isCorrect = true;
+        } else if (q.type === 'multi-input') {
+          let allRight = true;
+          q.inputs.forEach(inp => {
+            const val = document.getElementById(`q_${q.id}_${inp.key}`).value.trim();
+            if (val !== inp.ans) allRight = false;
+          });
+          if (allRight) isCorrect = true;
+        } else if (q.type === 'select') {
+          const userVal = document.getElementById(`q_${q.id}`).value;
+          if (userVal === q.ans) isCorrect = true;
+        } else if (q.type === 'select-text') {
+          const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
+          if (selected && selected.value === q.ans) isCorrect = true;
+        }
+
+        if (isCorrect) score++;
+
+        if (explainBox) {
+          explainBox.classList.remove('hidden');
+          if (isCorrect) {
+            explainBox.classList.add('bg-green-50', 'border-green-300');
+            explainBox.classList.remove('bg-red-50', 'border-red-300');
+          } else {
+            explainBox.classList.add('bg-red-50', 'border-red-300');
+            explainBox.classList.remove('bg-green-50', 'border-green-300');
+          }
+        }
+      });
+
+      const board = document.getElementById('result-board');
+      const scoreText = document.getElementById('score-text');
+      const feedbackText = document.getElementById('feedback-text');
+
+      if (scoreText) scoreText.innerText = `${score} / 10`;
+      if (feedbackText) {
+        if (score === 10) {
+          feedbackText.innerText = "🌟 太厲害了！全對！你已經完全掌握三針時鐘與時間計算了！";
+        } else if (score >= 7) {
+          feedbackText.innerText = "👍 表現很好！請細閱紅框內的【名師詳解】繼續加油！";
+        } else {
+          feedbackText.innerText = "💪 不要灰心，先回到上方的「三針時鐘互動教學」溫習，再試一次吧！";
+        }
+      }
+
+      if (board) {
+        board.classList.remove('hidden');
+        board.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      updateDemoClock(10, 10, 15);
+      renderTeachClocks();
+      generateQuiz();
+    });
+  </script>
+</body>
+</html>

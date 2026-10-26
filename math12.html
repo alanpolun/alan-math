@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小三數學：五位數綜合練習 (P3 Mathematics: 5-Digit Numbers)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module" src="auth.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0fdf4;
+        }
+        .math-font {
+            font-family: 'Chakra Petch', sans-serif;
+        }
+        /* Hide number input spin buttons / up-down arrows for clean typing */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Go Back button (same pattern as math7-11) -->
+    <a href="index.html#year3" style="position: fixed; top: 20px; left: 20px; background: #4A90E2; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index:1000;">← Go Back</a>
+
+    <!-- Header Banner -->
+    <header class="bg-emerald-600 text-white shadow-md border-b-4 border-emerald-700">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-emerald-700 font-black rounded-2xl w-12 h-12 flex items-center justify-center text-xl shadow-inner border-2 border-emerald-300">
+                    3A
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black tracking-wide">小學三年級數學科：五位數 (5-Digit Numbers)</h1>
+                    <p class="text-xs md:text-sm text-emerald-100 font-medium">香港小學數學課程標準練習 • 隨機出題與10大情境題庫</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button id="generateBtn" onclick="generateNewQuiz()" class="bg-amber-400 hover:bg-amber-300 active:translate-y-0.5 text-emerald-950 font-bold px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-2 border-2 border-amber-200 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    重新生成練習 (10題)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto w-full px-4 py-6 flex-grow">
+        <!-- Student Info Header Block -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border-2 border-emerald-100 mb-6 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex flex-wrap items-center gap-6 text-sm font-bold text-slate-600">
+                <div class="flex items-center gap-2">
+                    <span class="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 font-bold">單元一</span>
+                    <span>五位數練習工作紙</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span>日期：</span>
+                    <span id="currentDateDisplay" class="border-b-2 border-slate-400 px-3 text-slate-800 math-font font-bold"></span>
+                </div>
+            </div>
+            <div id="scoreHeaderBox" class="hidden bg-emerald-50 border-2 border-emerald-400 px-4 py-1.5 rounded-xl text-emerald-900 font-black text-base flex items-center gap-2">
+                <span>成績：</span>
+                <span id="headerScore" class="text-2xl text-emerald-600 font-extrabold math-font">0</span>
+                <span>/ 100 分</span>
+            </div>
+        </div>
+
+        <!-- Questions Container Form -->
+        <form id="quizForm" onsubmit="event.preventDefault(); submitQuiz();" class="space-y-6">
+            <div id="questionsContainer" class="space-y-6">
+                <!-- Dynamically Inserted Questions -->
+            </div>
+
+            <!-- Submit Button & Controls Bar -->
+            <div class="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md border-2 border-emerald-200 rounded-2xl p-4 shadow-xl flex flex-wrap justify-between items-center gap-4">
+                <div class="text-xs md:text-sm text-slate-500 font-medium">
+                    提示：請直接使用鍵盤輸入數字答案，毋須使用上下箭頭。
+                </div>
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="generateNewQuiz()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition">
+                        重新出題
+                    </button>
+                    <button type="submit" id="submitBtn" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:translate-y-0.5 text-white font-extrabold text-base rounded-xl shadow-lg shadow-emerald-200 transition flex items-center gap-2 cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                        提交答案並對答案
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Result Summary Card -->
+        <div id="resultSummary" class="hidden bg-white rounded-3xl p-6 md:p-8 shadow-2xl border-4 border-emerald-500 my-8">
+            <div class="text-center space-y-4">
+                <div class="inline-flex p-3 bg-emerald-100 rounded-full text-emerald-600 mb-1">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-black text-slate-800">練習完成！</h2>
+                
+                <div class="flex justify-center items-baseline gap-2">
+                    <span class="text-slate-500 font-bold text-lg">你的得分：</span>
+                    <span id="finalScore" class="text-5xl font-black text-emerald-600 math-font">0</span>
+                    <span class="text-slate-500 font-bold">/ 100 分</span>
+                </div>
+
+                <div id="feedbackBadge" class="inline-block px-6 py-2 rounded-full font-bold text-base bg-emerald-100 text-emerald-800">
+                    棒極了！繼續保持！
+                </div>
+
+                <p id="summaryText" class="text-slate-600 text-sm max-w-md mx-auto">
+                    每道題下方均附有詳細步驟與解題說明，請仔細覆核錯誤題目！
+                </p>
+
+                <div class="pt-4 flex justify-center gap-4">
+                    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="px-5 py-2.5 border-2 border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition">
+                        返回頂部查看檢討
+                    </button>
+                    <button onclick="generateNewQuiz()" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-md transition">
+                        生成另一輯新練習
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-slate-800 text-slate-400 py-6 text-center text-xs mt-12">
+        <div class="max-w-5xl mx-auto px-4 space-y-2">
+            <p>香港小學三年級數學專題練習 — 五位數 (5-Digit Numbers)</p>
+            <p class="text-slate-500">依據小學數學課程指引設計 • 支持直接鍵盤輸入</p>
+        </div>
+    </footer>
+
+    <script>
+        // 10 Rich Shopping Scenarios JSON Dataset for Q6
+        const shoppingScenariosJSON = [
+            {
+                id: 1,
+                person: "陳先生",
+                itemCategory: "電動車",
+                storeName: "新思維車行",
+                budget: 76400,
+                options: [
+                    { name: "款式一", price: 74599 },
+                    { name: "款式二", price: 76499 },
+                    { name: "款式三", price: 76049 }
+                ],
+                questionText: "陳先生有 76400 元預算，他可以選擇哪些款式？（請勾選所有合適的選項）"
+            },
+            {
+                id: 2,
+                person: "張太太",
+                itemCategory: "大電視機",
+                storeName: "創科影音世界",
+                budget: 18500,
+                options: [
+                    { name: "85吋 OLED 旗艦電視", price: 19800 },
+                    { name: "75吋 4K 超高清電視", price: 17990 },
+                    { name: "65吋 Smart LED 電視", price: 12480 }
+                ],
+                questionText: "張太太打算用不多於 18500 元購買一部電視機，她可以購買哪些型號？"
+            },
+            {
+                id: 3,
+                person: "李先生",
+                itemCategory: "手提電腦",
+                storeName: "數碼科技城",
+                budget: 14000,
+                options: [
+                    { name: "電競專業版", price: 15200 },
+                    { name: "輕薄商務版", price: 13880 },
+                    { name: "學生學習版", price: 10990 }
+                ],
+                questionText: "李先生想買一束預算在 14000 元以內的手提電腦，哪些型號符合預算？"
+            },
+            {
+                id: 4,
+                person: "向陽小學",
+                itemCategory: "智能互動螢幕",
+                storeName: "智慧教具公司",
+                budget: 45000,
+                options: [
+                    { name: "86吋 觸控教學螢幕", price: 46800 },
+                    { name: "75吋 多功能教學螢幕", price: 42500 },
+                    { name: "65吋 標準教學螢幕", price: 38900 }
+                ],
+                questionText: "學校有 45000 元撥款，可以購買哪些型號的智能螢幕？"
+            },
+            {
+                id: 5,
+                person: "飛躍體育會",
+                itemCategory: "跑步機訓練器材",
+                storeName: "健美體育用品店",
+                budget: 32000,
+                options: [
+                    { name: "商業級豪華跑步機", price: 34500 },
+                    { name: "專業級折疊跑步機", price: 31800 },
+                    { name: "家用智能跑步機", price: 25600 }
+                ],
+                questionText: "體育會設有 32000 元購置基金，可購買哪些跑步機？"
+            },
+            {
+                id: 6,
+                person: "黃醫生",
+                itemCategory: "家庭影院音響",
+                storeName: "博藝名響店",
+                budget: 52000,
+                options: [
+                    { name: "7.1 環繞聲聲學系統", price: 54900 },
+                    { name: "5.1 全景聲旗艦套裝", price: 51200 },
+                    { name: "無線高保真音響系統", price: 48600 }
+                ],
+                questionText: "黃醫生預算不超過 52000 元，他可以選購哪些音響系統？"
+            },
+            {
+                id: 7,
+                person: "林太太",
+                itemCategory: "真皮梳化",
+                storeName: "歐陸家居美學",
+                budget: 26000,
+                options: [
+                    { name: "意大利進口 4人梳化", price: 28500 },
+                    { name: "頭層牛皮 L型梳化", price: 25800 },
+                    { name: "電動按摩三座梳化", price: 23900 }
+                ],
+                questionText: "林太太帶了 26000 元現金，可購買哪些真皮梳化？"
+            },
+            {
+                id: 8,
+                person: "開心餐廳",
+                itemCategory: "商用雙門雪櫃",
+                storeName: "聯興廚具工程",
+                budget: 21500,
+                options: [
+                    { name: "特大容量風冷雪櫃", price: 23000 },
+                    { name: "雙門變頻冷凍雪櫃", price: 20800 },
+                    { name: "標準節能冷藏雪櫃", price: 18900 }
+                ],
+                questionText: "餐廳負責人有 21500 元預算，可以選擇哪些雪櫃？"
+            },
+            {
+                id: 9,
+                person: "聖雅各音樂室",
+                itemCategory: "直立式鋼琴",
+                storeName: "通利琴行",
+                budget: 68000,
+                options: [
+                    { name: "日本原裝進口鋼琴", price: 72000 },
+                    { name: "專業演奏級鋼琴", price: 65800 },
+                    { name: "練習級木質鋼琴", price: 58000 }
+                ],
+                questionText: "音樂室準備了 68000 元購買鋼琴，哪些鋼琴符合預算？"
+            },
+            {
+                id: 10,
+                person: "周先生",
+                itemCategory: "歐洲雙人豪華旅遊套票",
+                storeName: "環球假期旅行社",
+                budget: 85000,
+                options: [
+                    { name: "北歐極光12天精選團", price: 88900 },
+                    { name: "西歐五國10天深度遊", price: 83500 },
+                    { name: "東歐城堡9天浪漫遊", price: 79800 }
+                ],
+                questionText: "周先生的旅遊預算為 85000 元，他可以報名哪些旅遊套票？"
+            }
+        ];
+
+        let currentQuestions = [];
+        let isSubmitted = false;
+        let quizStartTime = null;
+
+        const numToChineseMap = {'0':'零', '1':'一', '2':'二', '3':'三', '4':'四', '5':'五', '6':'六', '7':'七', '8':'八', '9':'九'};
+        
+        function numberToTraditionalChinese(num) {
+            if (num < 10000 || num > 99999) return num.toString();
+            const str = num.toString();
+            const d萬 = parseInt(str[0]);
+            const d千 = parseInt(str[1]);
+            const d百 = parseInt(str[2]);
+            const d十 = parseInt(str[3]);
+            const d個 = parseInt(str[4]);
+
+            let result = numToChineseMap[d萬] + "萬";
+
+            if (d千 !== 0) {
+                result += numToChineseMap[d千] + "千";
+            } else if (d百 !== 0 || d十 !== 0 || d個 !== 0) {
+                result += "零";
+            }
+
+            if (d百 !== 0) {
+                result += numToChineseMap[d百] + "百";
+            } else if (d千 !== 0 && (d十 !== 0 || d個 !== 0) && !result.endsWith("零")) {
+                result += "零";
+            }
+
+            if (d十 !== 0) {
+                result += numToChineseMap[d十] + "十";
+            } else if (d百 !== 0 && d個 !== 0 && !result.endsWith("零")) {
+                result += "零";
+            }
+
+            if (d個 !== 0) {
+                result += numToChineseMap[d個];
+            }
+
+            result = result.replace(/零+/g, '零').replace(/零$/, '');
+            return result;
+        }
+
+        function createAbacusSVG(digitsArray) {
+            const places = ['萬位', '千位', '百位', '十位', '個位'];
+            const svgWidth = 320;
+            const svgHeight = 220;
+            const colSpacing = 55;
+            const startX = 50;
+            const baseY = 170;
+            const beadHeight = 11;
+            const rodHeight = 115;
+
+            let rodsHTML = '';
+            let beadsHTML = '';
+            let labelsHTML = '';
+
+            digitsArray.forEach((count, colIdx) => {
+                const x = startX + colIdx * colSpacing;
+                
+                rodsHTML += `<line x1="${x}" y1="${baseY - rodHeight}" x2="${x}" y2="${baseY}" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>`;
+                
+                for (let b = 0; b < count; b++) {
+                    const cy = baseY - 10 - (b * (beadHeight + 2));
+                    beadsHTML += `<ellipse cx="${x}" cy="${cy}" rx="18" ry="5.5" fill="#e11d48" stroke="#9f1239" stroke-width="1.5"/>`;
+                }
+
+                labelsHTML += `
+                    <g transform="translate(${x - 22}, ${baseY + 5})">
+                        <rect x="0" y="0" width="44" height="28" rx="6" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.5"/>
+                        <text x="22" y="18" font-size="12" font-weight="bold" fill="#334155" text-anchor="middle" font-family="'Noto Sans TC', sans-serif">${places[colIdx]}</text>
+                    </g>
+                `;
+            });
+
+            return `
+                <svg viewBox="0 0 ${svgWidth} ${svgHeight}" class="w-full max-w-[320px] mx-auto filter drop-shadow-sm">
+                    <rect x="15" y="${baseY}" width="290" height="12" rx="4" fill="#881337" />
+                    ${rodsHTML}
+                    ${beadsHTML}
+                    ${labelsHTML}
+                </svg>
+            `;
+        }
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function getDigits(num) {
+            return num.toString().padStart(5, '0').split('').map(Number);
+        }
+
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Question Generators
+        function generateQ1() {
+            const num = getRandomInt(10000, 99999);
+            const digits = getDigits(num);
+            const chinese = numberToTraditionalChinese(num);
+            return {
+                type: 'abacus_read',
+                title: '看看算柱所表示的數，回答以下問題。',
+                digits: digits,
+                number: num,
+                chineseAnswer: chinese,
+                explanation: `算柱萬位有 ${digits[0]} 粒珠、千位有 ${digits[1]} 粒、百位有 ${digits[2]} 粒、十位有 ${digits[3]} 粒、個位有 ${digits[4]} 粒。\n阿拉伯數字：${num}。\n中文讀作：「${chinese}」。`
+            };
+        }
+
+        function generateQ2() {
+            const num = getRandomInt(10000, 99999);
+            const digits = getDigits(num);
+            const placeNames = ['萬', '千', '百', '十', '個'];
+            const placeMultipliers = [10000, 1000, 100, 10, 1];
+
+            let p1 = getRandomInt(0, 4);
+            let p2 = getRandomInt(0, 4);
+            while (p2 === p1) { p2 = getRandomInt(0, 4); }
+
+            // A digit may appear in several places (e.g. 「4」 in 34418 → 千位 or 百位).
+            // Collect ALL valid (place, value) pairs for each asked digit.
+            const validPositionsFor = (d) => [0, 1, 2, 3, 4]
+                .filter(i => digits[i] === d)
+                .map(i => ({ place: placeNames[i], val: digits[i] * placeMultipliers[i] }));
+            const p1Valid = validPositionsFor(digits[p1]);
+            const p2Valid = validPositionsFor(digits[p2]);
+            const fmtValid = (list) => list.map(v => `在${v.place}位，表示 ${v.val}`).join('；或');
+
+            return {
+                type: 'place_value_analysis',
+                title: `在「${num}」這個數中：`,
+                number: num,
+                p1: { digit: digits[p1], place: placeNames[p1], val: digits[p1] * placeMultipliers[p1] },
+                p2: { digit: digits[p2], place: placeNames[p2], val: digits[p2] * placeMultipliers[p2] },
+                p1Valid: p1Valid,
+                p2Valid: p2Valid,
+                explanation: `數字「${digits[p1]}」${fmtValid(p1Valid)}。數字「${digits[p2]}」${fmtValid(p2Valid)}。`
+            };
+        }
+
+        function generateQ3() {
+            const baseNum = getRandomInt(10000, 96000);
+            const digits = getDigits(baseNum);
+            const offsets = [3, 30, 300, 3000, 50, 500, 2000];
+            const offset = offsets[getRandomInt(0, offsets.length - 1)];
+            const isMore = Math.random() > 0.3;
+            const targetNum = isMore ? baseNum + offset : baseNum - offset;
+
+            return {
+                type: 'abacus_offset',
+                title: `右圖算柱表示一個五位數。這個數 ${isMore ? '多' : '少'} ${offset} 是多少？`,
+                baseNum: baseNum,
+                digits: digits,
+                offset: offset,
+                isMore: isMore,
+                correctAnswer: targetNum,
+                explanation: `算柱原本表示的數是 ${baseNum}。\n計算：${baseNum} ${isMore ? '+' : '-'} ${offset} = ${targetNum}。`
+            };
+        }
+
+        function generateQ4() {
+            let digits = [getRandomInt(1, 9)];
+            for (let i = 0; i < 4; i++) {
+                digits.push(getRandomInt(0, 9));
+            }
+            digits = shuffleArray(digits);
+
+            const types = ['最大的五位奇數', '最小的五位偶數', '最大的五位數', '最小的五位數'];
+            const targetType = types[getRandomInt(0, types.length - 1)];
+
+            function getPermutations(arr) {
+                let res = [];
+                function permute(curr, remaining) {
+                    if (remaining.length === 0) {
+                        if (curr[0] !== 0) res.push(parseInt(curr.join('')));
+                        return;
+                    }
+                    for (let i = 0; i < remaining.length; i++) {
+                        permute([...curr, remaining[i]], remaining.slice(0, i).concat(remaining.slice(i + 1)));
+                    }
+                }
+                permute([], arr);
+                return [...new Set(res)];
+            }
+
+            const valids = getPermutations(digits);
+            let ans = null;
+            if (targetType === '最大的五位奇數') {
+                const odds = valids.filter(n => n % 2 !== 0);
+                ans = odds.length ? Math.max(...odds) : null;
+            } else if (targetType === '最小的五位偶數') {
+                const evens = valids.filter(n => n % 2 === 0);
+                ans = evens.length ? Math.min(...evens) : null;
+            } else if (targetType === '最大的五位數') {
+                ans = Math.max(...valids);
+            } else {
+                ans = Math.min(...valids);
+            }
+
+            if (!ans) return generateQ4();
+
+            return {
+                type: 'digit_cards',
+                title: `從 ${digits.join('、')} 中選出這五個數字，排出【${targetType}】。`,
+                cards: digits,
+                targetType: targetType,
+                correctAnswer: ans,
+                explanation: `使用數字卡 ${digits.join(', ')} 組成${targetType}（首位萬位不能為0），正確解答為 ${ans}。`
+            };
+        }
+
+        function generateQ5() {
+            const isAscending = Math.random() > 0.5;
+            const orderStr = isAscending ? '由低至高（由小至大）' : '由高至低（由大至小）';
+            const base = getRandomInt(20000, 80000);
+            
+            let nums = [
+                base,
+                base + getRandomInt(120, 600),
+                base + getRandomInt(700, 1800)
+            ];
+            nums = shuffleArray(nums);
+            let sorted = [...nums].sort((a, b) => isAscending ? a - b : b - a);
+
+            return {
+                type: 'ordering',
+                title: `把以下三個數【${orderStr}】排列出來：`,
+                numbers: nums,
+                correctOrder: sorted,
+                explanation: `${orderStr}排列結果為：${sorted.join(' ， ')}。`
+            };
+        }
+
+        // Q6: Scenario Question from JSON Dataset
+        function generateQ6() {
+            const randomScenario = shoppingScenariosJSON[getRandomInt(0, shoppingScenariosJSON.length - 1)];
+            const validItems = randomScenario.options.filter(o => o.price <= randomScenario.budget).map(o => o.name);
+
+            return {
+                type: 'scenario_json',
+                scenario: randomScenario,
+                validNames: validItems,
+                explanation: `${randomScenario.person}預算為 $${randomScenario.budget}。\n售價低於或等於預算 $${randomScenario.budget} 的選項有：${validItems.join(' 及 ')}。`
+            };
+        }
+
+        function generateQ7() {
+            const minVal = getRandomInt(12000, 75000);
+            const maxVal = minVal + getRandomInt(400, 900);
+            const correctOpt = getRandomInt(minVal + 1, maxVal - 1);
+
+            const wrong1 = minVal - getRandomInt(10, 300);
+            const wrong2 = maxVal + getRandomInt(10, 300);
+            const wrong3 = maxVal + getRandomInt(301, 700);
+
+            let choices = shuffleArray([
+                { val: correctOpt, correct: true },
+                { val: wrong1, correct: false },
+                { val: wrong2, correct: false },
+                { val: wrong3, correct: false }
+            ]);
+
+            return {
+                type: 'range_mc',
+                title: `方格內的數可能是以下哪個數？`,
+                minVal: minVal,
+                maxVal: maxVal,
+                choices: choices,
+                correctVal: correctOpt,
+                explanation: `方格內的數必須大於 ${minVal} 並且小於 ${maxVal}。只有 ${correctOpt} 符合要求。`
+            };
+        }
+
+        function generateQ8() {
+            const presets = [
+                { beads: 5, label: '最小的五位奇數', answer: 10013, exp: '萬位放1粒珠，個位需為奇數（放3粒珠），其餘1粒珠放十位以保持數值最小，答案為 10013。' },
+                { beads: 5, label: '最大的五位數', answer: 50000, exp: '要使數值最大，5粒珠全部放在最高的萬位，答案為 50000。' },
+                { beads: 4, label: '最小的五位數', answer: 10003, exp: '萬位放1粒珠，剩餘3粒珠放在個位以保持最小，答案為 10003。' }
+            ];
+            const chosen = presets[getRandomInt(0, presets.length - 1)];
+
+            return {
+                type: 'bead_constraint',
+                title: `在算柱上畫 ${chosen.beads} 粒算珠，表示【${chosen.label}】。這個數是多少？`,
+                correctAnswer: chosen.answer,
+                explanation: chosen.exp
+            };
+        }
+
+        function generateQ9() {
+            const baseNum = getRandomInt(10000, 95000);
+            const digits = getDigits(baseNum);
+            const addVal = 3000;
+            const ans = baseNum + addVal;
+
+            return {
+                type: 'abacus_read',
+                title: `右圖算柱表示一個五位數。這個數多 ${addVal} 是多少？`,
+                digits: digits,
+                number: baseNum,
+                correctAnswer: ans,
+                explanation: `算柱表示的數是 ${baseNum}。${baseNum} + ${addVal} = ${ans}。`
+            };
+        }
+
+        function generateQ10() {
+            const minR = getRandomInt(20, 50) * 1000 + 1000; // e.g. 21000
+            const maxR = minR + 4000; // e.g. 25000
+            const isEven = Math.random() > 0.5;
+            const conditionStr = isEven ? '五位偶數' : '五位奇數';
+
+            return {
+                type: 'range_condition',
+                title: `請寫出一個比 ${minR} 大，但比 ${maxR} 小的【${conditionStr}】。`,
+                minR: minR,
+                maxR: maxR,
+                isEven: isEven,
+                explanation: `任何介乎 ${minR} 與 ${maxR} 之間且個位是${isEven ? '偶數 (0, 2, 4, 6, 8)' : '奇數 (1, 3, 5, 7, 9)'} 的五位數均可接受。`
+            };
+        }
+
+        // ============ Firebase Logging (same pattern as math2/4/5/11) ============
+        const MATH12_TEST_NAME = "🚀 五位數綜合練習";
+
+        function getHKTTimestamp() {
+            const now = new Date();
+            const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+            return hkt.toISOString().replace('T', ' ').slice(0, 19);
+        }
+
+        function getSafeUsername() {
+            return (window.getUsername && window.getUsername()) || "訪客";
+        }
+
+        // Log entrance when user enters the practice (same as math11 logEntrance)
+        async function logEntrance() {
+            try {
+                if (window.db && window.addDoc) {
+                    await window.addDoc(window.collection(window.db, "test-log"), {
+                        username: getSafeUsername(),
+                        test: MATH12_TEST_NAME,
+                        timestamp: getHKTTimestamp(),
+                        status: "entered"
+                    });
+                }
+            } catch (error) {
+                console.error("Firebase entrance logging failed:", error);
+            }
+        }
+
+        // Log incorrect answers to incorrect-log (same fields as math2/4/5)
+        async function saveIncorrectAnswers(records) {
+            try {
+                if (!(window.db && window.addDoc)) return;
+                const timestamp = getHKTTimestamp();
+                const promises = records.map(r =>
+                    window.addDoc(window.collection(window.db, "incorrect-log"), {
+                        username: getSafeUsername(),
+                        question: r.question,
+                        correctAnswer: r.correctAnswer,
+                        studentAnswer: r.studentAnswer,
+                        timestamp: timestamp
+                    })
+                );
+                await Promise.all(promises);
+            } catch (error) {
+                console.error('Error saving incorrect answers:', error);
+            }
+        }
+
+        // Log completion with score + time spent (test-log, same fields as math2/4/5)
+        async function saveCompletion(totalScore, totalTimeSec) {
+            try {
+                if (!(window.db && window.addDoc)) return;
+                await window.addDoc(window.collection(window.db, "test-log"), {
+                    username: getSafeUsername(),
+                    test: MATH12_TEST_NAME,
+                    score: totalScore,
+                    timespend: Math.floor(totalTimeSec / 60) + "分" + (totalTimeSec % 60) + "秒",
+                    timestamp: getHKTTimestamp()
+                });
+            } catch (error) {
+                console.error('Error saving attendance:', error);
+            }
+        }
+
+        window.onUserSet = function () {
+            logEntrance();
+        };
+
+        function generateNewQuiz() {
+            isSubmitted = false;
+            quizStartTime = Date.now();
+            document.getElementById('scoreHeaderBox').classList.add('hidden');
+            document.getElementById('resultSummary').classList.add('hidden');
+            
+            const today = new Date();
+            document.getElementById('currentDateDisplay').innerText = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
+
+            currentQuestions = [
+                generateQ1(),
+                generateQ2(),
+                generateQ3(),
+                generateQ4(),
+                generateQ5(),
+                generateQ6(), // JSON Scenario
+                generateQ7(),
+                generateQ8(),
+                generateQ9(),
+                generateQ10()
+            ];
+
+            renderQuestions();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            currentQuestions.forEach((q, idx) => {
+                const qNum = idx + 1;
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl p-5 md:p-6 shadow-sm border-2 border-slate-100 hover:border-emerald-200 transition relative";
+                card.id = `q_card_${qNum}`;
+
+                let bodyHTML = '';
+
+                if (q.type === 'abacus_read' && q.chineseAnswer) {
+                    bodyHTML = `
+                        <div class="mb-4">${createAbacusSVG(q.digits)}</div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">(a) 算柱所表示的數是：</label>
+                                <input type="number" id="input_${qNum}_a" class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg focus:border-emerald-500 focus:outline-none math-font font-bold text-lg" placeholder="用鍵盤輸入數字">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">(b) 讀作：</label>
+                                <input type="text" id="input_${qNum}_b" class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg focus:border-emerald-500 focus:outline-none font-bold text-base" placeholder="例如：四萬八千二百零五">
+                            </div>
+                        </div>
+                    `;
+                } else if (q.type === 'place_value_analysis') {
+                    const placeSelect = (id) => `
+                        <select id="${id}" class="px-3 py-1.5 border-2 border-slate-300 rounded-lg text-center font-bold bg-white focus:border-emerald-500 focus:outline-none">
+                            <option value="">位</option>
+                            <option value="個">個</option>
+                            <option value="十">十</option>
+                            <option value="百">百</option>
+                            <option value="千">千</option>
+                            <option value="萬">萬</option>
+                        </select>`;
+                    bodyHTML = `
+                        <div class="bg-amber-50/70 p-3 rounded-xl border border-amber-200 mb-4 text-center">
+                            <span class="text-3xl font-black text-amber-900 math-font tracking-wider">${q.number}</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                <p class="text-sm font-semibold mb-2">(a) 「<span class="text-emerald-700 font-bold">${q.p1.digit}</span>」在何位，表示多少？</p>
+                                <div class="flex items-center gap-2">
+                                    <span>在</span>
+                                    ${placeSelect(`input_${qNum}_a1`)}
+                                    <span>位，表示</span>
+                                    <input type="number" id="input_${qNum}_a2" class="w-28 px-2 py-1.5 border-2 border-slate-300 rounded-lg text-center font-bold math-font" placeholder="數值">
+                                </div>
+                            </div>
+                            <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                <p class="text-sm font-semibold mb-2">(b) 「<span class="text-emerald-700 font-bold">${q.p2.digit}</span>」在何位，表示多少？</p>
+                                <div class="flex items-center gap-2">
+                                    <span>在</span>
+                                    ${placeSelect(`input_${qNum}_b1`)}
+                                    <span>位，表示</span>
+                                    <input type="number" id="input_${qNum}_b2" class="w-28 px-2 py-1.5 border-2 border-slate-300 rounded-lg text-center font-bold math-font" placeholder="數值">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (q.type === 'abacus_offset') {
+                    bodyHTML = `
+                        <div class="mb-4">${createAbacusSVG(q.digits)}</div>
+                        <div class="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <span class="font-bold text-slate-700">答案：</span>
+                            <input type="number" id="input_${qNum}" class="w-48 px-3 py-2 border-2 border-slate-300 rounded-lg font-bold text-lg math-font focus:border-emerald-500 focus:outline-none" placeholder="輸入數字">
+                        </div>
+                    `;
+                } else if (q.type === 'digit_cards') {
+                    bodyHTML = `
+                        <div class="flex justify-center items-center gap-2 my-4">
+                            ${q.cards.map(c => `
+                                <div class="w-12 h-16 bg-white border-2 border-slate-800 rounded-xl shadow-md flex items-center justify-center text-2xl font-black math-font text-slate-800">
+                                    ${c}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <span class="font-bold text-slate-700">答案：</span>
+                            <input type="number" id="input_${qNum}" class="w-48 px-3 py-2 border-2 border-slate-300 rounded-lg font-bold text-lg math-font focus:border-emerald-500 focus:outline-none" placeholder="五位數">
+                        </div>
+                    `;
+                } else if (q.type === 'ordering') {
+                    bodyHTML = `
+                        <div class="flex flex-wrap justify-center gap-4 my-4 font-bold text-xl text-slate-700">
+                            ${q.numbers.map(n => `<span class="bg-emerald-50 border border-emerald-300 px-4 py-2 rounded-xl math-font">${n}</span>`).join('')}
+                        </div>
+                        <div class="flex flex-wrap items-center justify-center gap-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <input type="number" id="input_${qNum}_1" class="w-28 px-2 py-1.5 border-2 border-slate-300 rounded-lg text-center font-bold math-font text-base" placeholder="第一個">
+                            <span class="font-bold text-slate-400">,</span>
+                            <input type="number" id="input_${qNum}_2" class="w-28 px-2 py-1.5 border-2 border-slate-300 rounded-lg text-center font-bold math-font text-base" placeholder="第二個">
+                            <span class="font-bold text-slate-400">,</span>
+                            <input type="number" id="input_${qNum}_3" class="w-28 px-2 py-1.5 border-2 border-slate-300 rounded-lg text-center font-bold math-font text-base" placeholder="第三個">
+                        </div>
+                    `;
+                } else if (q.type === 'scenario_json') {
+                    const sc = q.scenario;
+                    bodyHTML = `
+                        <div class="my-3 p-4 bg-purple-50/80 border border-purple-200 rounded-2xl">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="bg-purple-600 text-white font-bold text-xs px-2.5 py-1 rounded-md">${sc.storeName}</span>
+                                <span class="text-sm font-bold text-purple-900">${sc.person}預算：<span class="math-font text-lg text-purple-700">$${sc.budget}</span></span>
+                            </div>
+                            <p class="text-sm text-slate-700 font-medium mb-3">${sc.questionText}</p>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-center">
+                                ${sc.options.map(opt => `
+                                    <div class="bg-white p-3 rounded-xl border border-purple-200 shadow-sm flex flex-col justify-between">
+                                        <div class="text-xs font-bold text-slate-600">${opt.name}</div>
+                                        <div class="text-lg font-black text-slate-800 math-font mt-2">$${opt.price}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                            ${sc.options.map(opt => `
+                                <label class="flex items-center gap-2 font-bold cursor-pointer hover:text-emerald-700">
+                                    <input type="checkbox" name="chk_${qNum}" value="${opt.name}" class="w-5 h-5 text-emerald-600 rounded">
+                                    <span>${opt.name}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    `;
+                } else if (q.type === 'range_mc') {
+                    bodyHTML = `
+                        <div class="my-3 text-center bg-emerald-50/70 py-3 rounded-xl border border-emerald-200 font-bold text-lg text-emerald-900 math-font">
+                            ${q.minVal} &nbsp;＜&nbsp; <span class="inline-block border-2 border-dashed border-emerald-500 px-4 py-1 rounded-md bg-white">？</span> &nbsp;＜&nbsp; ${q.maxVal}
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            ${q.choices.map((c, idxOpt) => `
+                                <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border-2 border-slate-200 cursor-pointer hover:bg-emerald-50/50 transition">
+                                    <input type="radio" name="opt_${qNum}" value="${c.val}" class="w-5 h-5 text-emerald-600">
+                                    <span class="font-bold text-base math-font">${String.fromCharCode(65 + idxOpt)}. ${c.val}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    `;
+                } else if (q.type === 'bead_constraint') {
+                    bodyHTML = `
+                        <div class="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <span class="font-bold text-slate-700">答案：</span>
+                            <input type="number" id="input_${qNum}" class="w-48 px-3 py-2 border-2 border-slate-300 rounded-lg font-bold text-lg math-font focus:border-emerald-500 focus:outline-none" placeholder="輸入數字">
+                        </div>
+                    `;
+                } else if (q.type === 'abacus_read' && q.correctAnswer) {
+                    bodyHTML = `
+                        <div class="mb-4">${createAbacusSVG(q.digits)}</div>
+                        <div class="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <span class="font-bold text-slate-700">答案：</span>
+                            <input type="number" id="input_${qNum}" class="w-48 px-3 py-2 border-2 border-slate-300 rounded-lg font-bold text-lg math-font focus:border-emerald-500 focus:outline-none" placeholder="輸入數字">
+                        </div>
+                    `;
+                } else if (q.type === 'range_condition') {
+                    bodyHTML = `
+                        <div class="flex items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <span class="font-bold text-slate-700">答案：</span>
+                            <input type="number" id="input_${qNum}" class="w-48 px-3 py-2 border-2 border-slate-300 rounded-lg font-bold text-lg math-font focus:border-emerald-500 focus:outline-none" placeholder="輸入符合條件的數">
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 bg-emerald-600 text-white font-extrabold rounded-lg flex items-center justify-center text-sm">
+                                ${qNum}
+                            </span>
+                            <h3 class="font-bold text-base md:text-lg text-slate-800">${q.type === 'scenario_json' ? `【情境題】${q.scenario.itemCategory}採購` : q.title}</h3>
+                        </div>
+                        <span id="badge_${qNum}" class="hidden text-xs font-bold px-2.5 py-1 rounded-full"></span>
+                    </div>
+                    ${bodyHTML}
+                    <div id="explanation_${qNum}" class="hidden mt-4 p-4 rounded-xl bg-slate-100 text-xs md:text-sm border-l-4 border-slate-400 space-y-1">
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+        function submitQuiz() {
+            if (isSubmitted) return;
+            isSubmitted = true;
+
+            let correctCount = 0;
+            const wrongRecords = [];
+
+            currentQuestions.forEach((q, idx) => {
+                const qNum = idx + 1;
+                const card = document.getElementById(`q_card_${qNum}`);
+                const badge = document.getElementById(`badge_${qNum}`);
+                const exp = document.getElementById(`explanation_${qNum}`);
+
+                let isCorrect = false;
+                let studentAnswerText = '';
+                let correctAnswerText = '';
+                let questionText = q.title || q.type;
+
+                if (q.type === 'abacus_read' && q.chineseAnswer) {
+                    const ansA = parseInt(document.getElementById(`input_${qNum}_a`).value || '0');
+                    const ansB = (document.getElementById(`input_${qNum}_b`).value || '').trim().replace(/\s+/g, '');
+                    isCorrect = (ansA === q.number) && (ansB === q.chineseAnswer);
+                    studentAnswerText = `${ansA} / ${ansB || '未填'}`;
+                    correctAnswerText = `${q.number} / ${q.chineseAnswer}`;
+
+                } else if (q.type === 'place_value_analysis') {
+                    const a1 = (document.getElementById(`input_${qNum}_a1`).value || '').trim();
+                    const a2 = parseInt(document.getElementById(`input_${qNum}_a2`).value || '0');
+                    const b1 = (document.getElementById(`input_${qNum}_b1`).value || '').trim();
+                    const b2 = parseInt(document.getElementById(`input_${qNum}_b2`).value || '0');
+
+                    // Accept ANY valid position for the digit (e.g. 「4」 in 34418: 千位=4000 or 百位=400)
+                    isCorrect = q.p1Valid.some(v => a1 === v.place && a2 === v.val)
+                             && q.p2Valid.some(v => b1 === v.place && b2 === v.val);
+                    studentAnswerText = `${a1 || '未填'}位=${a2}；${b1 || '未填'}位=${b2}`;
+                    correctAnswerText = `${q.p1Valid.map(v => v.place + '位=' + v.val).join(' 或 ')}；${q.p2Valid.map(v => v.place + '位=' + v.val).join(' 或 ')}`;
+
+                } else if (q.type === 'abacus_offset') {
+                    const ans = parseInt(document.getElementById(`input_${qNum}`).value || '0');
+                    isCorrect = ans === q.correctAnswer;
+                    studentAnswerText = isNaN(ans) ? '未填' : String(ans);
+                    correctAnswerText = String(q.correctAnswer);
+
+                } else if (q.type === 'digit_cards') {
+                    const ans = parseInt(document.getElementById(`input_${qNum}`).value || '0');
+                    isCorrect = ans === q.correctAnswer;
+                    studentAnswerText = isNaN(ans) ? '未填' : String(ans);
+                    correctAnswerText = String(q.correctAnswer);
+
+                } else if (q.type === 'ordering') {
+                    const a1 = parseInt(document.getElementById(`input_${qNum}_1`).value || '0');
+                    const a2 = parseInt(document.getElementById(`input_${qNum}_2`).value || '0');
+                    const a3 = parseInt(document.getElementById(`input_${qNum}_3`).value || '0');
+                    isCorrect = (a1 === q.correctOrder[0]) && (a2 === q.correctOrder[1]) && (a3 === q.correctOrder[2]);
+                    studentAnswerText = [a1, a2, a3].join(' , ');
+                    correctAnswerText = q.correctOrder.join(' , ');
+
+                } else if (q.type === 'scenario_json') {
+                    const checkboxes = document.querySelectorAll(`input[name="chk_${qNum}"]:checked`);
+                    const selected = Array.from(checkboxes).map(c => c.value);
+                    isCorrect = selected.length === q.validNames.length && q.validNames.every(n => selected.includes(n));
+                    studentAnswerText = selected.length ? selected.join('及') : '未填';
+                    correctAnswerText = q.validNames.join('及');
+                    questionText = `【情境題】${q.scenario.itemCategory}採購（預算$${q.scenario.budget}）`;
+
+                } else if (q.type === 'range_mc') {
+                    const selected = document.querySelector(`input[name="opt_${qNum}"]:checked`);
+                    if (selected) isCorrect = parseInt(selected.value) === q.correctVal;
+                    studentAnswerText = selected ? selected.value : '未填';
+                    correctAnswerText = String(q.correctVal);
+
+                } else if (q.type === 'bead_constraint') {
+                    const ans = parseInt(document.getElementById(`input_${qNum}`).value || '0');
+                    isCorrect = ans === q.correctAnswer;
+                    studentAnswerText = isNaN(ans) ? '未填' : String(ans);
+                    correctAnswerText = String(q.correctAnswer);
+
+                } else if (q.type === 'abacus_read' && q.correctAnswer) {
+                    const ans = parseInt(document.getElementById(`input_${qNum}`).value || '0');
+                    isCorrect = ans === q.correctAnswer;
+                    studentAnswerText = isNaN(ans) ? '未填' : String(ans);
+                    correctAnswerText = String(q.correctAnswer);
+
+                } else if (q.type === 'range_condition') {
+                    const ans = parseInt(document.getElementById(`input_${qNum}`).value || '0');
+                    const isEvenAns = ans % 2 === 0;
+                    isCorrect = (ans > q.minR && ans < q.maxR) && (q.isEven ? isEvenAns : !isEvenAns);
+                    studentAnswerText = isNaN(ans) ? '未填' : String(ans);
+                    correctAnswerText = `介乎 ${q.minR} 與 ${q.maxR} 之間的${q.isEven ? '偶數' : '奇數'}`;
+                }
+
+                if (!isCorrect) {
+                    wrongRecords.push({
+                        question: `第${qNum}題 ${questionText}`,
+                        correctAnswer: correctAnswerText,
+                        studentAnswer: studentAnswerText
+                    });
+                }
+
+                badge.classList.remove('hidden');
+                exp.classList.remove('hidden');
+
+                if (isCorrect) {
+                    correctCount++;
+                    card.classList.add('border-emerald-400', 'bg-emerald-50/20');
+                    badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300";
+                    badge.innerText = "✓ 正確 (+10分)";
+                    exp.className = "mt-4 p-4 rounded-xl bg-emerald-50 text-xs md:text-sm border-l-4 border-emerald-500 text-emerald-900";
+                    exp.innerHTML = `<span class="font-bold">【答案正確】</span> ${q.explanation.replace(/\n/g, '<br>')}`;
+                } else {
+                    card.classList.add('border-rose-300', 'bg-rose-50/20');
+                    badge.className = "text-xs font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 border border-rose-300";
+                    badge.innerText = "✗ 錯誤";
+                    exp.className = "mt-4 p-4 rounded-xl bg-rose-50 text-xs md:text-sm border-l-4 border-rose-500 text-rose-900";
+                    exp.innerHTML = `<span class="font-bold">【解題步驟】</span> ${q.explanation.replace(/\n/g, '<br>')}`;
+                }
+            });
+
+            const totalScore = correctCount * 10;
+            document.getElementById('headerScore').innerText = totalScore;
+            document.getElementById('scoreHeaderBox').classList.remove('hidden');
+            
+            document.getElementById('finalScore').innerText = totalScore;
+            const badgeElem = document.getElementById('feedbackBadge');
+
+            if (totalScore === 100) {
+                badgeElem.className = "inline-block px-6 py-2 rounded-full font-bold text-base bg-emerald-500 text-white shadow-md";
+                badgeElem.innerText = "🌟 太棒了！100分滿分！五位數高手！";
+            } else if (totalScore >= 80) {
+                badgeElem.className = "inline-block px-6 py-2 rounded-full font-bold text-base bg-emerald-100 text-emerald-800 border border-emerald-300";
+                badgeElem.innerText = "👏 表現非常優秀！";
+            } else if (totalScore >= 60) {
+                badgeElem.className = "inline-block px-6 py-2 rounded-full font-bold text-base bg-amber-100 text-amber-800 border border-amber-300";
+                badgeElem.innerText = "👍 及格了！請認真檢討錯題！";
+            } else {
+                badgeElem.className = "inline-block px-6 py-2 rounded-full font-bold text-base bg-rose-100 text-rose-800 border border-rose-300";
+                badgeElem.innerText = "💪 不要灰心！再試一次加油！";
+            }
+
+            document.getElementById('resultSummary').classList.remove('hidden');
+            document.getElementById('resultSummary').scrollIntoView({ behavior: 'smooth' });
+
+            // ============ Firebase logging on completion ============
+            const totalTimeSec = quizStartTime ? Math.floor((Date.now() - quizStartTime) / 1000) : 0;
+            saveCompletion(totalScore, totalTimeSec);
+            if (wrongRecords.length > 0) {
+                saveIncorrectAnswers(wrongRecords);
+            }
+        }
+
+        window.onload = function() {
+            generateNewQuiz();
+            // Log entrance if user already logged in (cookie set); auth.js will
+            // call window.onUserSet -> logEntrance() for fresh logins.
+            if (window.getUsername && window.getUsername() !== "訪客") {
+                logEntrance();
+            }
+        };
+    </script>
+</body>
+</html>

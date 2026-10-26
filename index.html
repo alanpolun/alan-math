@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小學三年級數學無限練習</title>
+    <title>小學數學無限練習</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module" src="auth.js"></script>
     <style>
@@ -33,6 +33,10 @@
         .card-link:hover .icon {
             transform: scale(1.1) rotate(5deg);
         }
+
+        .hide-view {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -40,33 +44,40 @@
     <div class="w-full max-w-6xl">
         <!-- Header -->
         <div class="text-center mb-16">
-            <h1 class="text-5xl font-bold text-white mb-4">📚 小學三年級數學無限練習</h1>
-            <p class="text-xl text-gray-100">選擇一項練習開始吧！</p>
+            <h1 class="text-5xl font-bold text-white mb-4">📚 小學數學無限練習</h1>
+            <p class="text-xl text-gray-100">選擇你的年級開始吧！</p>
         </div>
 
-        <!-- Cards Container -->
+        <!-- Year Selector (主選單) -->
+        <div id="year-select" class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+            <!-- 🎒 小學二年級數學 -->
+            <a href="#" onclick="showYear(2); return false;" class="card-link">
+                <div
+                    class="bg-white rounded-3xl p-10 text-center shadow-lg h-full flex flex-col items-center justify-center">
+                    <div class="icon" style="font-size: 72px;">🎒</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">小學二年級數學</h2>
+                    <p class="text-sm text-gray-600">乘數表、除法、借位減法、應用題等 7 個練習</p>
+                </div>
+            </a>
+
+            <!-- 🚀 小學三年級數學 -->
+            <a href="#" onclick="showYear(3); return false;" class="card-link">
+                <div
+                    class="bg-white rounded-3xl p-10 text-center shadow-lg h-full flex flex-col items-center justify-center">
+                    <div class="icon" style="font-size: 72px;">🚀</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">小學三年級數學</h2>
+                    <p class="text-sm text-gray-600">直式乘除法、五位數、長度與時間等 9 則練習</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- 🎒 小學二年級數學 (math1 - math6 + math16 除數無限挑戰) -->
+        <div id="year2" class="hide-view">
+        <a href="#" onclick="backToSelect(); return false;"
+            class="inline-block bg-white hover:bg-gray-100 text-indigo-600 font-bold py-3 px-6 rounded-full shadow-lg mb-8 transition-all hover:scale-105">← 返回選單</a>
+        <h2 class="text-3xl font-bold text-white mb-8">🎒 小學二年級數學</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Math 1 -->
-            <a href="math3.html" class="card-link">
-                <div
-                    class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
-                    <div class="icon">🔢</div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">乘除應用題</h2>
-                    <p class="text-sm text-gray-600">提升計算與邏輯思維</p>
-                </div>
-            </a>
-
-            <!-- Math 2 -->
-            <a href="math2.html" class="card-link">
-                <div
-                    class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
-                    <div class="icon">➖</div>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">連續借位減法挑戰</h2>
-                    <p class="text-sm text-gray-600">掌握進階減法技巧</p>
-                </div>
-            </a>
-
-            <!-- Math 3 -->
+            <!-- math1 乘數表無限挑戰 -->
             <a href="math1.html" class="card-link">
                 <div
                     class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
@@ -76,7 +87,40 @@
                 </div>
             </a>
 
-            <!-- Math 4 -->
+            <!-- math2 連續借位減法挑戰 -->
+            <a href="math16.html"
+              class="card-link bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1 border-l-8 border-sky-500 block">
+              <div class="flex items-center gap-3 mb-3">
+                  <span class="text-4xl">➗</span>
+                  <h2 class="text-2xl font-bold text-gray-800">🚀 除數無限挑戰</h2>
+              </div>
+              <p class="text-gray-600">乘數表的相反練習：基本除法 ＋ 除以 10、100、1000</p>
+              <div class="mt-4 flex items-center gap-2">
+                  <span class="text-sm text-sky-600 font-bold">✍️ 20 題計時挑戰</span>
+              </div>
+            </a>
+
+            <!-- math2 連續借位減法挑戰 -->
+            <a href="math2.html" class="card-link">
+                <div
+                    class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
+                    <div class="icon">➖</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">連續借位減法挑戰</h2>
+                    <p class="text-sm text-gray-600">掌握進階減法技巧</p>
+                </div>
+            </a>
+
+            <!-- math3 乘除應用題 -->
+            <a href="math3.html" class="card-link">
+                <div
+                    class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
+                    <div class="icon">🔢</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">乘除應用題</h2>
+                    <p class="text-sm text-gray-600">提升計算與邏輯思維</p>
+                </div>
+            </a>
+
+            <!-- math4 三則運算挑戰 -->
             <a href="math4.html" class="card-link">
                 <div
                     class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
@@ -86,7 +130,7 @@
                 </div>
             </a>
 
-            <!-- Math 5 -->
+            <!-- math5 借位減法特訓 -->
             <a href="math5.html" class="card-link">
                 <div
                     class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
@@ -96,7 +140,7 @@
                 </div>
             </a>
 
-            <!-- Math 6 -->
+            <!-- math6 路線規劃大師 -->
             <a href="math6.html" class="card-link">
                 <div
                     class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
@@ -105,8 +149,16 @@
                     <p class="text-sm text-gray-600">進階路徑規劃挑戰</p>
                 </div>
             </a>
+        </div>
+        </div>
 
-            <!-- Math 7 -->
+        <!-- 🚀 小學三年級數學 (math7 - math15) -->
+        <div id="year3" class="hide-view">
+        <a href="#" onclick="backToSelect(); return false;"
+            class="inline-block bg-white hover:bg-gray-100 text-indigo-600 font-bold py-3 px-6 rounded-full shadow-lg mb-8 transition-all hover:scale-105">← 返回選單</a>
+        <h2 class="text-3xl font-bold text-white mt-16 mb-8">🚀 小學三年級數學</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- math7 三位數乘兩位數直式教學 -->
             <a href="math7.html" class="card-link">
                 <div
                     class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
@@ -116,7 +168,7 @@
                 </div>
             </a>
 
-            <!-- Math 8 -->
+            <!-- math8 星際數學大冒險 -->
             <a href="math8.html" class="card-link">
                 <div
                     class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
@@ -126,7 +178,7 @@
                 </div>
             </a>
 
-            <!-- Math 9 -->
+            <!-- math9 三步拆解特訓 -->
             <a href="math9.html" class="card-link">
                 <div
                     class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
@@ -136,7 +188,7 @@
                 </div>
             </a>
 
-            <!-- Math 10 -->
+            <!-- math10 二位數除以單位數直式教學 -->
             <a href="math10.html" class="card-link">
                 <div
                     class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
@@ -146,7 +198,7 @@
                 </div>
             </a>
 
-            <!-- Math 11 -->
+            <!-- math11 商數特訓 -->
             <a href="math11.html" class="card-link">
                 <div
                     class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
@@ -155,6 +207,47 @@
                     <p class="text-sm text-gray-600">精準計算商數與餘數</p>
                 </div>
             </a>
+
+            <!-- math12 五位數綜合練習 -->
+            <a href="math12.html" class="card-link">
+                <div
+                    class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
+                    <div class="icon">🧮</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">🚀 五位數綜合練習</h2>
+                    <p class="text-sm text-gray-600">算柱、位值與情境題 10 大挑戰</p>
+                </div>
+            </a>
+
+            <!-- math13 長度與距離 -->
+            <a href="math13.html" class="card-link">
+                <div
+                    class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
+                    <div class="icon">📏</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">🚀 長度與距離（mm、cm、m、km）</h2>
+                    <p class="text-sm text-gray-600">量度、換算與路線圖應用</p>
+                </div>
+            </a>
+
+            <!-- math14 秒與時間計算 教學 -->
+            <a href="math14.html" class="card-link">
+                <div
+                    class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
+                    <div class="icon">⏰</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">🚀 秒與時間計算（單元八、九）</h2>
+                    <p class="text-sm text-gray-600">三針時鐘互動教學 ＋ 10 題練習</p>
+                </div>
+            </a>
+
+            <!-- math15 秒與24小時報時制 練習 -->
+            <a href="math15.html" class="card-link">
+                <div
+                    class="bg-white rounded-3xl p-8 text-center shadow-lg h-full flex flex-col items-center justify-center">
+                    <div class="icon">🕒</div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">🚀 秒與24小時報時制練習</h2>
+                    <p class="text-sm text-gray-600">圖形化時鐘 10 題挑戰</p>
+                </div>
+            </a>
+        </div>
         </div>
 
         <!-- Footer -->
@@ -173,6 +266,34 @@
             class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white hover:bg-gray-100 text-indigo-600 font-bold py-3 px-6 rounded-full shadow-lg flex items-center gap-2 transition-all hover:scale-105">
             👤 更改使用者名稱
         </button>
+
+        <script>
+            function showYear(y) {
+                try { localStorage.setItem('alanmath_lastYear', String(y)); } catch (e) {}
+                document.getElementById('year-select').classList.add('hide-view');
+                document.getElementById('year2').classList.toggle('hide-view', y !== 2);
+                document.getElementById('year3').classList.toggle('hide-view', y !== 3);
+            }
+            function backToSelect() {
+                document.getElementById('year-select').classList.remove('hide-view');
+                document.getElementById('year2').classList.add('hide-view');
+                document.getElementById('year3').classList.add('hide-view');
+            }
+
+            // 由練習頁「← 返回主頁」返回時，直接打開對應年級的頁面清單，
+            // 不要停在年級選擇畫面（Alan 2026-10-22）。
+            // 支援 index.html#year3 / index.html#year2 以及 index.html?year=3
+            function openYearFromUrl() {
+                const hash = (location.hash || '').toLowerCase();
+                const qs = new URLSearchParams(location.search);
+                const q = (qs.get('year') || '').trim();
+                if (hash === '#year3' || q === '3') { showYear(3); window.scrollTo(0, 0); }
+                else if (hash === '#year2' || q === '2') { showYear(2); window.scrollTo(0, 0); }
+            }
+            window.addEventListener('DOMContentLoaded', openYearFromUrl);
+            window.addEventListener('hashchange', openYearFromUrl);
+            openYearFromUrl();   // script 位於 body 末端，DOM 已可用
+        </script>
     </div>
 </body>
 

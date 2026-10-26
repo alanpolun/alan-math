@@ -48,7 +48,7 @@
 </head>
 
 <body class="min-h-screen flex flex-col justify-center items-center p-6 relative">
-    <a href="index.html"
+    <a style="z-index:1000;" href="index.html#year2"
         class="absolute top-4 left-4 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition-colors shadow-lg">←
         返回首頁</a>
 
@@ -68,7 +68,7 @@
 
                 <div class="flex flex-col items-center gap-10">
                     <input type="number" id="answer-input"
-                        class="w-64 text-7xl text-center border-b-8 border-green-400 outline-none p-4 bg-transparent font-bold text-green-600"
+                        class="w-[28rem] max-w-full text-6xl text-center border-b-8 border-green-400 outline-none p-4 bg-transparent font-bold text-green-600 tracking-wide"
                         placeholder="?" autofocus>
 
                     <button onclick="nextQuestion()"
@@ -145,7 +145,8 @@
 
         function generateRandomQuestions() {
             const newQuestions = [];
-            for (let i = 0; i < 20; i++) {
+            // 15 題基本乘數表
+            for (let i = 0; i < 15; i++) {
                 const a = Math.floor(Math.random() * 8) + 2; 
                 const b = Math.floor(Math.random() * 8) + 2; 
                 const format = Math.floor(Math.random() * 3); 
@@ -157,6 +158,30 @@
                 } else {
                     newQuestions.push({ q: `? × ${b} = ${a * b}`, a: a, display: `? × ${b} = ${a * b}` });
                 }
+            }
+
+            // 乘 10 / 100 / 1000 / 10000（Alan 2026-10-22 新增 5 題）
+            // z 只會是 10、100、1000 或 10000
+            //   z = 10 / 100 / 1000 -> y 為大於 100 的隨機數（101 – 1000）
+            //   z = 10000           -> y 必須小於 100（用 10 – 99 的兩位數，免得答案太大）
+            const powers = [10, 100, 1000, 10000];
+            for (let i = 0; i < 5; i++) {
+                const z = powers[Math.floor(Math.random() * powers.length)];
+                const y = (z === 10000)
+                    ? Math.floor(Math.random() * 90) + 10              // 10 – 99（< 100）
+                    : Math.floor(Math.random() * 900) + 101;           // 101 – 1000（> 100）
+                newQuestions.push({
+                    q: `${y} × ${z} = ?`,
+                    a: y * z,
+                    display: `${y} × ${z} = ?`
+                });
+            }
+            // 把 20 題（15 基本 + 5 乘 10/100/1000/10000）洗牌，隨機排列
+            for (let i = newQuestions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const tmp = newQuestions[i];
+                newQuestions[i] = newQuestions[j];
+                newQuestions[j] = tmp;
             }
             return newQuestions;
         }
@@ -191,7 +216,7 @@
             const val = document.getElementById('answer-input').value;
             if (val === "") return;
             userAnswers.push(parseInt(val));
-            if (currentIdx < 19) {
+            if (currentIdx < questions.length - 1) {
                 currentIdx++;
                 showQuestion();
             } else {
@@ -211,7 +236,13 @@
                 const isCorrect = userAnswers[i] === q.a;
                 const div = document.createElement('div');
                 div.className = `result-detail-giant font-bold ${isCorrect ? "text-green-600" : "text-red-500"}`;
-                div.innerHTML = `第 ${i + 1} 題：${isCorrect ? '✅' : '❌'}<br><span class="text-gray-400 text-2xl">${q.display} (你答:${userAnswers[i]})</span>`;
+                const given = (userAnswers[i] === '' || userAnswers[i] === null || userAnswers[i] === undefined)
+                    ? '未作答' : userAnswers[i];
+                // 答錯時要顯示正確答案（Alan 2026-10-22）
+                const detail = isCorrect
+                    ? `${q.display} (你答:${given})`
+                    : `${q.display} (你答:${given}，正確答案:<span class="text-red-700">${q.a}</span>)`;
+                div.innerHTML = `第 ${i + 1} 題：${isCorrect ? '✅' : '❌'}<br><span class="text-gray-500 text-2xl">${detail}</span>`;
                 detailDiv.appendChild(div);
             });
 
