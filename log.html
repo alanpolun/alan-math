@@ -40,6 +40,7 @@
 
     <script type="module">
         import { getCookie } from './auth.js';
+        import { startAfter } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         
         // Skip auto modal for logs but check user
         window.skipAuthInit = false; // We want researchers/students to see the login if not set
@@ -81,29 +82,47 @@
                      return;
                 }
 
-                const q = window.query(
-                    window.collection(window.db, currentTab),
-                    window.where("username", "==", currentUsername),
-                    window.limit(100)
-                );
-                const snapshot = await window.getDocs(q);
+                // 逐頁讀取「這個用戶」的全部記錄。
+                // 舊寫法只做 where(username) + limit(100)：Firestore 按文件 ID 排序取前 100 筆，
+                // 不是最新 100 筆 —— 記錄一多（例如 Po Lun 已有 234 筆），新記錄就會被截在外面，
+                // 家長在「錯誤記錄」只看到零星幾筆。改為用 startAfter 分頁抓到全部，再在瀏覽器排序。
+                const PAGE = 300;
+                let cursor = null, allDocs = [];
+                for (let page = 0; page < 40; page++) {
+                    const parts = [
+                        window.collection(window.db, currentTab),
+                        window.where("username", "==", currentUsername)
+                    ];
+                    if (cursor) parts.push(startAfter(cursor));
+                    parts.push(window.limit(PAGE));
+                    const snap = await window.getDocs(window.query(...parts));
+                    allDocs = allDocs.concat(snap.docs);
+                    if (snap.docs.length < PAGE) break;
+                    cursor = snap.docs[snap.docs.length - 1];
+                }
 
-                if (snapshot.empty) {
+                if (allDocs.length === 0) {
                     list.innerHTML = '';
                     empty.classList.remove('hidden');
                     return;
                 }
 
                 // Sort client-side to avoid composite index requirement
-                let docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                let docs = allDocs.map(doc => ({ id: doc.id, ...doc.data() }));
                 docs.sort((a, b) => {
                     const timeA = a.timestamp || "";
                     const timeB = b.timestamp || "";
                     return timeB.localeCompare(timeA);
                 });
+                const totalCount = docs.length;
+                const MAX_RENDER = 200;
+                const truncated = totalCount > MAX_RENDER;
+                if (truncated) docs = docs.slice(0, MAX_RENDER);
 
                 empty.classList.add('hidden');
-                list.innerHTML = '';
+                list.innerHTML = truncated
+                    ? `<p class="text-gray-500 text-center mb-4">共 ${totalCount} 筆記錄，顯示最新 ${MAX_RENDER} 筆</p>`
+                    : '';
 
                 docs.forEach((data) => {
                     const id = data.id;

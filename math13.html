@@ -150,6 +150,267 @@
       </svg>`;
     }
 
+    // ===== 節點地圖（6 個地點、8 段路程）=====
+    // 參考 P3 課本 lenght3.pdf 第 7 題 及「Math test.pdf」第 2 頁第 6–8 題：
+    // 同一個地圖上要比較 4 個目的地、找最短的 3 段路線、指定途經兩個地方、以及反推途經哪一個地方。
+    const MAP_NODES = {
+      '商場':   { x: 70,  y: 70,  color: '#f59e0b' },
+      '雪兒家': { x: 550, y: 70,  color: '#8b5cf6' },
+      '學校':   { x: 70,  y: 350, color: '#10b981' },
+      '運動場': { x: 310, y: 190, color: '#0ea5e9' },
+      '郵局':   { x: 310, y: 400, color: '#ef4444' },
+      '醫院':   { x: 550, y: 350, color: '#dc2626' }
+    };
+    const MAP_TOPO = [
+      ['商場', '學校'],
+      ['商場', '雪兒家'],
+      ['學校', '郵局'],
+      ['學校', '運動場'],
+      ['運動場', '郵局'],
+      ['雪兒家', '運動場'],
+      ['運動場', '醫院'],
+      ['郵局', '醫院']
+    ];
+    // 每段路程標籤的位置（全部落在自己所屬的路段正中間，避免看錯）
+    const MAP_LABEL_POS = [
+      { x: 70,  y: 210, anchor: 'middle' },
+      { x: 310, y: 70,  anchor: 'middle' },
+      { x: 190, y: 375, anchor: 'middle' },
+      { x: 171, y: 283, anchor: 'middle' },
+      { x: 310, y: 295, anchor: 'middle' },
+      { x: 430, y: 130, anchor: 'middle' },
+      { x: 454, y: 286, anchor: 'middle' },
+      { x: 430, y: 375, anchor: 'middle' }
+    ];
+    // 找不到理想隨機組合時使用的後備地圖（固定值，答案由同一套計算產生）
+    const MAP_FIXED_EDGES = [
+      { a: '商場', b: '學校', m: 400 },
+      { a: '商場', b: '雪兒家', m: 3000 },
+      { a: '學校', b: '郵局', m: 2000 },
+      { a: '學校', b: '運動場', m: 4000 },
+      { a: '運動場', b: '郵局', m: 900 },
+      { a: '雪兒家', b: '運動場', m: 300 },
+      { a: '運動場', b: '醫院', m: 1500 },
+      { a: '郵局', b: '醫院', m: 2500 }
+    ];
+
+    function mapLegLabel(m) {
+      const km = Math.floor(m / 1000), rem = m % 1000;
+      if (km === 0) return `${rem} 米`;
+      if (rem === 0) return `${km} 公里`;
+      return `${km} 公里 ${rem} 米`;
+    }
+
+    function drawNodeMap(edges) {
+      const R = 27;
+      let lines = '', labels = '', nodes = '';
+      edges.forEach((e, i) => {
+        const A = MAP_NODES[e.a], B = MAP_NODES[e.b];
+        const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy);
+        const ux = dx / L, uy = dy / L;
+        lines += `<line x1="${(A.x + ux * R).toFixed(1)}" y1="${(A.y + uy * R).toFixed(1)}" x2="${(B.x - ux * R).toFixed(1)}" y2="${(B.y - uy * R).toFixed(1)}" stroke="#94a3b8" stroke-width="3"/>`;
+        const txt = mapLegLabel(e.m);
+        const w = Math.max(66, txt.length * 16 + 20), h = 28;
+        const p = MAP_LABEL_POS[i];
+        let x = p.x;
+        if (p.anchor === 'middle') x = Math.min(Math.max(x, w / 2 + 4), 556 - w / 2);
+        else x = Math.min(x, 556 - w);
+        const left = p.anchor === 'middle' ? x - w / 2 : x;
+        labels += `<rect x="${left.toFixed(1)}" y="${p.y - h / 2}" width="${w.toFixed(1)}" height="${h}" rx="7" fill="#fffbeb" stroke="#e2e8f0"/>`;
+        labels += `<text x="${x.toFixed(1)}" y="${p.y + 6}" font-size="17" font-weight="bold" text-anchor="${p.anchor}" fill="#0f172a">${txt}</text>`;
+      });
+      Object.keys(MAP_NODES).forEach(name => {
+        const n = MAP_NODES[name];
+        nodes += `<circle cx="${n.x}" cy="${n.y}" r="${R}" fill="${n.color}" stroke="#fff" stroke-width="2.5"/>`;
+        nodes += `<text x="${n.x}" y="${n.y + 6}" font-size="15" font-weight="bold" text-anchor="middle" fill="#fff">${name}</text>`;
+      });
+      return `
+      <svg viewBox="0 0 620 460" class="w-full max-w-3xl mx-auto" role="img" aria-label="路線地圖">
+        ${lines}${labels}${nodes}
+      </svg>`;
+    }
+
+    // 最短路徑（Dijkstra，權重單位：米）
+    function mapShortest(edges, from, to) {
+      const names = Object.keys(MAP_NODES);
+      const dist = {}, prev = {}, done = {};
+      names.forEach(n => { dist[n] = Infinity; prev[n] = null; });
+      dist[from] = 0;
+      for (let k = 0; k < names.length; k++) {
+        let u = null;
+        names.forEach(n => { if (!done[n] && dist[n] < Infinity && (u === null || dist[n] < dist[u])) u = n; });
+        if (!u || u === to) break;
+        done[u] = true;
+        edges.forEach(e => {
+          let v = null;
+          if (e.a === u) v = e.b; else if (e.b === u) v = e.a;
+          if (v !== null && dist[u] + e.m < dist[v]) { dist[v] = dist[u] + e.m; prev[v] = u; }
+        });
+      }
+      if (!isFinite(dist[to])) return null;
+      const path = [to];
+      let cur = to;
+      while (prev[cur]) { cur = prev[cur]; path.unshift(cur); }
+      return { dist: dist[to], path: path };
+    }
+
+    function mapEdgeM(edges, x, y) {
+      const e = edges.find(e => (e.a === x && e.b === y) || (e.a === y && e.b === x));
+      return e ? e.m : null;
+    }
+
+    function mapAdjacent(edges, x, y) {
+      return mapEdgeM(edges, x, y) !== null;
+    }
+
+    function mapPathText(edges, path) {
+      const parts = [];
+      for (let i = 0; i < path.length - 1; i++) {
+        parts.push(`${path[i]}→${path[i + 1]} ${mapLegLabel(mapEdgeM(edges, path[i], path[i + 1]))}`);
+      }
+      return parts;
+    }
+
+    function mapRandomEdges() {
+      const vals = [
+        getRandomInt(4, 9) * 100 + getRandomInt(0, 9) * 10,
+        getRandomInt(3, 5) * 1000,
+        getRandomInt(2, 4) * 1000 + getRandomInt(0, 4) * 100,
+        getRandomInt(3, 5) * 1000 + getRandomInt(0, 9) * 100,
+        getRandomInt(5, 9) * 100 + getRandomInt(0, 9) * 10,
+        getRandomInt(1, 4) * 100 + getRandomInt(0, 9) * 10,
+        getRandomInt(1, 2) * 1000 + getRandomInt(0, 9) * 50,
+        getRandomInt(2, 4) * 1000 + getRandomInt(0, 9) * 30
+      ];
+      return MAP_TOPO.map((t, i) => ({ a: t[0], b: t[1], m: vals[i] }));
+    }
+
+    // 為一組路段收集所有合用的子題素材
+    function mapCollect(edges) {
+      const names = Object.keys(MAP_NODES);
+      const D = {};
+      names.forEach(a => {
+        D[a] = {};
+        names.forEach(b => { const r = mapShortest(edges, a, b); D[a][b] = r ? r.dist : Infinity; });
+      });
+
+      // (a) 由某一處前往 4 個地方，剛好只有一個目的地最遠
+      const candA = [];
+      names.forEach(src => {
+        const others = names.filter(n => n !== src);
+        others.forEach(skip => {
+          const cands = others.filter(n => n !== skip);
+          const mx = Math.max(...cands.map(n => D[src][n]));
+          if (cands.filter(n => D[src][n] === mx).length === 1) {
+            candA.push({ src: src, cands: cands, ans: cands.find(n => D[src][n] === mx) });
+          }
+        });
+      });
+
+      // (b) 最短路線至少要有 3 段；若「只經一個中途站」的直達路線更長，優先採用（學生常犯錯）
+      const traps = [], multi = [];
+      names.forEach(x => names.forEach(y => {
+        if (x === y) return;
+        const sp = mapShortest(edges, x, y);
+        if (!sp || sp.path.length < 4) return;
+        let naive = Infinity;
+        names.forEach(z => {
+          if (z === x || z === y) return;
+          if (mapAdjacent(edges, x, z) && mapAdjacent(edges, z, y)) {
+            naive = Math.min(naive, mapEdgeM(edges, x, z) + mapEdgeM(edges, z, y));
+          }
+        });
+        const item = { from: x, to: y, ans: sp.dist, path: sp.path, naive: naive };
+        if (isFinite(naive) && naive > sp.dist) traps.push(item); else multi.push(item);
+      }));
+
+      // (c) 指定先後途經兩個地方，答案需換算成「公里 + 米」，而且米不可為 0
+      const candC = [];
+      names.forEach(a => names.forEach(b => names.forEach(c => names.forEach(d => {
+        if (new Set([a, b, c, d]).size < 4) return;
+        const total = D[a][b] + D[b][c] + D[c][d];
+        if (!isFinite(total) || total < 1000 || total % 1000 === 0) return;
+        candC.push({ a: a, b: b, c: c, d: d, total: total });
+      }))));
+
+      // (d) 已知全程的總長度，反推途經哪一個地方（答案必須唯一）
+      const candD = [];
+      names.forEach(u => names.forEach(v => {
+        if (u === v) return;
+        const opts = names.filter(z => z !== u && z !== v).map(z => ({ z: z, m: D[u][z] + D[z][v] }));
+        opts.forEach(o => {
+          if (opts.filter(p => p.m === o.m).length === 1 && o.m > 0) {
+            candD.push({ from: u, to: v, via: o.z, total: o.m, opts: opts });
+          }
+        });
+      }));
+
+      return { candA: candA, traps: traps, multi: multi, candC: candC, candD: candD };
+    }
+
+    function mapAssemble(edges, A, B, C, Dq) {
+      const names = Object.keys(MAP_NODES);
+      const spB = mapShortest(edges, B.from, B.to);
+      const cKm = Math.floor(C.total / 1000), cM = C.total % 1000;
+      const dOpts = names.filter(n => n !== Dq.from && n !== Dq.to);
+
+      const distRows = A.cands.map(n => `${n} ${mapShortest(edges, A.src, n).dist} 米`).join('、');
+      const legAB = mapShortest(edges, C.a, C.b), legBC = mapShortest(edges, C.b, C.c), legCD = mapShortest(edges, C.c, C.d);
+
+      const explain =
+        `(a) 先把每段路程換算成米再比較：由 ${A.src} 前往 ${distRows}；最遠的是 <b>${A.ans}</b>（${mapShortest(edges, A.src, A.ans).dist} 米）。<br>` +
+        `(b) 不要只找「經一個地方」的路線：${spB.path.join(' → ')}，${mapPathText(edges, spB.path).join('，')}，合共 <b>${B.ans} 米</b>` +
+        (isFinite(B.naive) ? `（只經一個地方的直達路線最少也要 ${B.naive} 米，比這條更長）。` : `。`) + `<br>` +
+        `(c) 分三段計算：${C.a}→${C.b} = ${mapPathText(edges, legAB.path).join('，')} = ${legAB.dist} 米；${C.b}→${C.c} = ${mapPathText(edges, legBC.path).join('，')} = ${legBC.dist} 米；${C.c}→${C.d} = ${mapPathText(edges, legCD.path).join('，')} = ${legCD.dist} 米。合共 ${legAB.dist} + ${legBC.dist} + ${legCD.dist} = ${C.total} 米 = <b>${cKm} 公里 ${cM} 米</b>。<br>` +
+        `(d) 逐個地方試算由 ${Dq.from} 經該處前往 ${Dq.to} 的全程：${Dq.opts.map(o => `${o.z} ${o.m} 米`).join('、')}；只有經 <b>${Dq.via}</b> 才剛好是 ${mapLegLabel(Dq.total)}。`;
+
+      return {
+        id: 8,
+        type: 'node-map-q',
+        title: '路線地圖綜合題（比較、最短路徑、途經地方）',
+        prompt: `細閱下圖，回答 (a)、(b)、(c)、(d) 各題：<br>${drawNodeMap(edges)}<br>
+          (a) 由 <b>${A.src}</b> 前往（${A.cands.join(' / ')}）的路程最長。<br>
+          <span class="inline-flex items-center gap-2 flex-wrap">答案：<select id="q_${8}_a" class="px-4 py-2 border-2 border-amber-300 rounded-lg font-bold text-amber-900 bg-white focus:outline-none focus:border-amber-500">
+            <option value="">-- 請選擇 --</option>${A.cands.map(n => `<option value="${n}">${n}</option>`).join('')}
+          </select></span><br>
+          (b) 由 <b>${B.from}</b> 前往 <b>${B.to}</b>，最短的路程要走
+          <input type="number" id="q_${8}_b" class="w-28 px-2 py-1 border-2 border-amber-300 rounded-lg text-center font-bold text-lg focus:outline-none focus:border-amber-500" placeholder="答案"> 米。<br>
+          (c) 由 <b>${C.a}</b> 經 <b>${C.b}</b> 和 <b>${C.c}</b> 前往 <b>${C.d}</b>，最短的路程要走
+          <input type="number" id="q_${8}_c_km" class="w-20 px-2 py-1 border-2 border-amber-300 rounded-lg text-center font-bold text-lg focus:outline-none focus:border-amber-500" placeholder="公里"> 公里
+          <input type="number" id="q_${8}_c_m" class="w-20 px-2 py-1 border-2 border-amber-300 rounded-lg text-center font-bold text-lg focus:outline-none focus:border-amber-500" placeholder="米"> 米。<br>
+          (d) 由 <b>${Dq.from}</b> 經
+          <select id="q_${8}_d" class="px-3 py-1.5 border-2 border-amber-300 rounded-lg font-bold text-amber-900 bg-white focus:outline-none focus:border-amber-500">
+            <option value="">-- 請選擇 --</option>${dOpts.map(n => `<option value="${n}">${n}</option>`).join('')}
+          </select>
+          前往 <b>${Dq.to}</b>，全行程走了 <b>${mapLegLabel(Dq.total)}</b>。`,
+        ansA: A.ans,
+        ansB: String(B.ans),
+        ansCkm: String(cKm),
+        ansCm: String(cM),
+        ansD: Dq.via,
+        partLabels: {
+          a: `由 ${A.src} 前往（${A.cands.join(' / ')}）的路程最長`,
+          b: `由 ${B.from} 前往 ${B.to}，最短的路程要走多少米`,
+          c: `由 ${C.a} 經 ${C.b} 和 ${C.c} 前往 ${C.d}，最短的路程要走多少公里多少米`,
+          d: `由 ${Dq.from} 經哪一個地方前往 ${Dq.to}，全行程走了 ${mapLegLabel(Dq.total)}`
+        },
+        explain: explain
+      };
+    }
+
+    function buildNodeMapQuestion() {
+      const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+      for (let attempt = 0; attempt < 300; attempt++) {
+        const edges = mapRandomEdges();
+        const c = mapCollect(edges);
+        if (!c.candA.length || !c.candC.length || !c.candD.length) continue;
+        if (!c.traps.length && !c.multi.length) continue;
+        return mapAssemble(edges, pick(c.candA), pick(c.traps.length ? c.traps : c.multi), pick(c.candC), pick(c.candD));
+      }
+      const c = mapCollect(MAP_FIXED_EDGES);
+      return mapAssemble(MAP_FIXED_EDGES, c.candA[0], (c.traps.length ? c.traps : c.multi)[0], c.candC[0], c.candD[0]);
+    }
+
     let quizData = [];
     let isSubmitted = false;
     let quizStartTime = null;
@@ -314,27 +575,8 @@
         explain: `換算為米後進行比較：${sortedTrails.map(t => `${t.name}（${t.len} 米）`).join(' < ')}。`
       });
 
-      // 8. 地圖路程應用題（看圖：路線地圖，複雜數值如 1 公里 326 米）
-      const legParts = () => ({ km: getRandomInt(1, 4), m: getRandomInt(50, 950) });
-      const d1 = legParts(), d2 = legParts(), d3 = legParts(), d4 = legParts();
-      const legTotal = (l) => l.km * 1000 + l.m;
-      const path1 = legTotal(d1) + legTotal(d2);
-      const path2 = legTotal(d3) + legTotal(d4);
-      // 確保兩條路線長度不同（最短路線明確）
-      if (path1 === path2) { d4.m = d4.m === 950 ? 800 : 950; }
-      const path2b = legTotal(d3) + legTotal(d4);
-      const shortest = Math.min(path1, path2b);
-      const shortestIsRoute1 = path1 < path2b;
-      const legStr = (l) => `${l.km} 公里 ${l.m} 米`;
-      quizData.push({
-        id: 8,
-        type: 'map-q1',
-        title: '地圖路程計算（最快路線，看圖）',
-        prompt: `細看以下路線地圖：<br>${drawRouteMap(legStr(d1), legStr(d2), legStr(d3), legStr(d4))}<br>由學校前往醫院，<b>最短的路程</b>要走多少米？`,
-        suffix: ' 米',
-        ans: shortest.toString(),
-        explain: `先把每段路程換算為米：路線一（經商場）= ${legStr(d1)} + ${legStr(d2)} = ${legTotal(d1)} + ${legTotal(d2)} = ${path1} 米；路線二（經郵局）= ${legStr(d3)} + ${legStr(d4)} = ${legTotal(d3)} + ${legTotal(d4)} = ${path2b} 米。最短路程為 ${shortest} 米（經${shortestIsRoute1 ? '商場' : '郵局'}）。`
-      });
+      // 8. 路線地圖綜合題（6 個地點；比較、最短路徑、途經地方，參考測驗卷格式）
+      quizData.push(buildNodeMapQuestion());
 
       // 9. 地圖路程應用題（多走的路程，複雜數值如 2 公里 129 米）
       const dA_km = getRandomInt(3, 9);
@@ -380,6 +622,11 @@
         ansA: ptA.toString(),
         ansBMM: ansB.toString(),
         ansC: (ptC + ptD).toString(),
+        partLabels: {
+          a: 'A 點與 O 點相距多少毫米',
+          b: `${pickedPair[0]} 點與 ${pickedPair[1]} 點相距多少毫米`,
+          c: `甲蟲由 C 點爬行到 O 點，再爬行到 D 點，共爬行多少毫米`
+        },
         explain: `(a) A 點在 ${ptA} 毫米處，與 O 點相距 ${ptA} 毫米。(b) ${pickedPair[0]} 點在 ${pairPos[pickedPair[0]]} 毫米處，${pickedPair[1]} 點在 ${pairPos[pickedPair[1]]} 毫米處，兩點相距 ${Math.abs(pairPos[pickedPair[1]] - pairPos[pickedPair[0]])} 毫米。(c) C→O = ${ptC} 毫米，O→D = ${ptD} 毫米，共爬行 ${ptC} + ${ptD} = ${ptC + ptD} 毫米。`
       });
 
@@ -462,6 +709,10 @@
         } else if (q.type === 'numline-q') {
           contentHtml += `
             <p class="text-xs text-slate-500 mt-2">提示：(a)、(b)、(c) 的答案格已在上方題目內。</p>
+          `;
+        } else if (q.type === 'node-map-q') {
+          contentHtml += `
+            <p class="text-xs text-slate-500 mt-2">提示：(a)、(b)、(c)、(d) 的答案格已在上方題目內，請順序作答。</p>
           `;
         }
 
@@ -572,6 +823,7 @@
         let isCorrect = false;
         let studentAnswerText = '';
         let correctAnswerText = '';
+        let partRecords = null;   // 多空格題目：逐個空格記錄（記錄會與學生看到的空格數一致）
         const explainBox = document.getElementById(`explain_${q.id}`);
         const questionText = `第${q.id}題 ${q.title}：${String(q.prompt).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').slice(0, 60)}`;
 
@@ -624,19 +876,59 @@
           const a = document.getElementById(`q_${q.id}_a`).value.trim();
           const bMM = document.getElementById(`q_${q.id}_b_mm`).value.trim();
           const c = document.getElementById(`q_${q.id}_c`).value.trim();
-          if (a === q.ansA && bMM === q.ansBMM && c === q.ansC) isCorrect = true;
-          studentAnswerText = `${a || '未填'} / ${bMM || '未填'} / ${c || '未填'}`;
-          correctAnswerText = `${q.ansA} / ${q.ansBMM} / ${q.ansC}`;
+          const parts = [
+            { key: 'a', ok: a === q.ansA, correct: q.ansA + ' 毫米', student: a ? a + ' 毫米' : '' },
+            { key: 'b', ok: bMM === q.ansBMM, correct: q.ansBMM + ' 毫米', student: bMM ? bMM + ' 毫米' : '' },
+            { key: 'c', ok: c === q.ansC, correct: q.ansC + ' 毫米', student: c ? c + ' 毫米' : '' }
+          ];
+          if (parts.every(p => p.ok)) isCorrect = true;
+          partRecords = parts.filter(p => !p.ok).map(p => ({
+            label: `(${p.key}) ${q.partLabels[p.key]}`,
+            correct: p.correct,
+            student: p.student || '未填'
+          }));
+          studentAnswerText = parts.map(p => `(${p.key}) ${p.student || '未填'}`).join(' / ');
+          correctAnswerText = parts.map(p => `(${p.key}) ${p.correct}`).join(' / ');
+        } else if (q.type === 'node-map-q') {
+          const a = document.getElementById(`q_${q.id}_a`).value;
+          const b = document.getElementById(`q_${q.id}_b`).value.trim();
+          const cKm = document.getElementById(`q_${q.id}_c_km`).value.trim();
+          const cM = document.getElementById(`q_${q.id}_c_m`).value.trim();
+          const d = document.getElementById(`q_${q.id}_d`).value;
+          const parts = [
+            { key: 'a', ok: a === q.ansA, correct: q.ansA, student: a },
+            { key: 'b', ok: b === q.ansB, correct: q.ansB + ' 米', student: b ? b + ' 米' : '' },
+            { key: 'c', ok: (cKm === q.ansCkm && cM === q.ansCm), correct: `${q.ansCkm} 公里 ${q.ansCm} 米`,
+              student: (cKm || cM) ? `${cKm || '－'} 公里 ${cM || '－'} 米` : '' },
+            { key: 'd', ok: d === q.ansD, correct: q.ansD, student: d }
+          ];
+          if (parts.every(p => p.ok)) isCorrect = true;
+          partRecords = parts.filter(p => !p.ok).map(p => ({
+            label: `(${p.key}) ${q.partLabels[p.key]}`,
+            correct: p.correct,
+            student: p.student || '未填'
+          }));
+          studentAnswerText = parts.map(p => `(${p.key}) ${p.student || '未填'}`).join(' / ');
+          correctAnswerText = parts.map(p => `(${p.key}) ${p.correct}`).join(' / ');
         }
 
         if (isCorrect) score++;
 
         if (!isCorrect) {
-          wrongRecords.push({
-            question: questionText,
-            correctAnswer: correctAnswerText,
-            studentAnswer: studentAnswerText
-          });
+          if (partRecords && partRecords.length) {
+            // 多空格題目：每個答錯的空格各寫一筆記錄
+            partRecords.forEach(pr => wrongRecords.push({
+              question: `第${q.id}題 ${q.title} ${pr.label}`,
+              correctAnswer: pr.correct,
+              studentAnswer: pr.student
+            }));
+          } else {
+            wrongRecords.push({
+              question: questionText,
+              correctAnswer: correctAnswerText,
+              studentAnswer: studentAnswerText
+            });
+          }
         }
 
         explainBox.classList.remove('hidden');

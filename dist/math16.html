@@ -146,9 +146,9 @@
         function generateRandomQuestions() {
             const newQuestions = [];
 
-            // 15 題基本除法：x ÷ y = ?   z（商）必須是整數且小於 10
+            // 10 題基本除法：x ÷ y = ?   z（商）必須是整數且小於 10
             //   y 取 2–9，z 取 2–9，x = y × z（所以必定整除，z ≤ 9）
-            for (let i = 0; i < 15; i++) {
+            for (let i = 0; i < 10; i++) {
                 const y = Math.floor(Math.random() * 8) + 2;   // 除數 2–9
                 const z = Math.floor(Math.random() * 8) + 2;   // 商   2–9（< 10）
                 const x = y * z;
@@ -159,18 +159,39 @@
                 });
             }
 
-            // 5 題除以 10 / 100 / 1000（Alan 2026-10-22）
-            //   x 是 10 / 100 / 1000 的倍數（例如 3450、45300、234000）
-            //   y 是 10 / 100 / 1000，所以 z 一定是整數
-            const powers = [10, 100, 1000];
+            // 10 題「xxx000 / xx000」類型（Alan 2026-11-13：兩個條件，5 + 5）
+            //   條件 A（5 題）：被除數 = xxx000（xxx 101–999，6 位數），除數 = 1000 / 100 / 10
+            //   條件 B（5 題）：被除數 = xx000（xx 10–99，5 位數），除數 = y000 / y00 / y0，
+            //                  而且 xx ÷ y 一定要整除（y 2–9）
+            const powers = [1000, 100, 10];
+
+            // 條件 A
             for (let i = 0; i < 5; i++) {
-                const p = powers[Math.floor(Math.random() * powers.length)];  // 除數
-                const k = Math.floor(Math.random() * 899) + 101;              // 101–999
-                const x = k * p;                                              // 被除數（p 的倍數）
+                const xxx = Math.floor(Math.random() * 899) + 101;          // 101–999
+                const x = xxx * 1000;                                      // xxx000
+                const p = powers[Math.floor(Math.random() * powers.length)]; // 1000 / 100 / 10
                 newQuestions.push({
                     q: `${x} ÷ ${p} = ?`,
-                    a: k,
+                    a: x / p,
                     display: `${x} ÷ ${p} = ?`
+                });
+            }
+
+            // 條件 B
+            for (let i = 0; i < 5; i++) {
+                const scale = powers[Math.floor(Math.random() * powers.length)]; // y000 / y00 / y0
+                let y, xx;
+                do {
+                    y = Math.floor(Math.random() * 8) + 2;                 // y = 2–9
+                    const m = Math.floor(Math.random() * 90) + 10;         // 候選 10–99
+                    xx = Math.floor(m / y) * y;                            // 令 xx 是 y 的倍數
+                } while (xx < 10 || xx > 99);                              // 保證 xx 是 2 位數
+                const x = xx * 1000;                                       // xx000
+                const d = y * scale;
+                newQuestions.push({
+                    q: `${x} ÷ ${d} = ?`,
+                    a: x / d,
+                    display: `${x} ÷ ${d} = ?`
                 });
             }
 
