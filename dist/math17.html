@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小三數學互動教室：直式除法填格（除數謎）解題秘笈</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .div-grid {
+      display: grid;
+      grid-template-columns: 44px 16px 48px 48px;
+      align-items: center;
+      justify-items: center;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .box-cell {
+      width: 40px;
+      height: 40px;
+      border: 2.5px solid #0284c7;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f0f9ff;
+      color: #0369a1;
+      transition: all 0.25s ease;
+    }
+    .box-highlight {
+      border-color: #f59e0b;
+      background-color: #fef3c7;
+      color: #b45309;
+      transform: scale(1.08);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+    }
+    .box-solved {
+      border-color: #16a34a;
+      background-color: #dcfce7;
+      color: #15803d;
+    }
+    /* 直式除號：被除數上方橫線＋左側弧/折線 */
+    .div-bracket-cell {
+      width: 100%;
+      height: 44px;
+      border-top: 3px solid #1e293b;
+      border-left: 3px solid #1e293b;
+      border-top-left-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .div-dividend-top {
+      width: 100%;
+      height: 44px;
+      border-top: 3px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sub-line {
+      border-bottom: 3px solid #1e293b;
+      width: 100%;
+      grid-column: 3 / 5;
+      height: 4px;
+      margin: 2px 0;
+    }
+  </style>
+  <style>
+    /* 小三閱讀字級（Alan 2026-11-24：解說正文 20px、步驟標題 26px） */
+    #step-title { font-size: 26px; line-height: 1.35; }
+    #step-desc { font-size: 20px; line-height: 1.75; }
+    #step-desc strong { color: #b45309; }
+  </style>
+</head>
+<body class="bg-sky-50 min-h-screen py-8 px-4 font-sans text-slate-800">
+
+  <a href="index.html#year3" style="position: fixed; top: 20px; left: 20px; background: #0284c7; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;">← Go Back</a>
+
+  <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border-4 border-sky-300 p-6 md:p-10">
+    
+    <header class="border-b-2 border-dashed border-sky-200 pb-6 mb-8 text-center">
+      <div class="inline-block bg-sky-500 text-white text-xs md:text-sm font-bold px-4 py-1 rounded-full mb-2">
+        小學三年級數學科 ｜ 高階思維互動教學
+      </div>
+      <h1 class="text-2xl md:text-4xl font-extrabold text-slate-800 tracking-tight">
+        破解「直式除法填格（除數謎）」
+      </h1>
+      <p class="text-slate-500 text-sm md:text-base mt-2">
+        學會三大偵探線索，並可隨時隨機生成新例子，一步步看懂方格數字怎麼推出來！
+      </p>
+    </header>
+
+    <!-- 三大偵探線索卡片 -->
+    <section class="mb-8">
+      <h2 class="text-xl font-extrabold text-sky-900 mb-4 flex items-center gap-2">
+        <span>🕵️</span> 偵探三大解題線索
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-amber-50 border-2 border-amber-200 p-4 rounded-xl">
+          <div class="font-bold text-amber-900 text-base mb-1">線索 1：乘法關係</div>
+          <p class="text-sm text-slate-700 leading-relaxed">
+            直式裡面的「減數」是由<strong>「商 × 除數」</strong>乘出來的！看到商和減數，就能用乘法口訣反推。
+          </p>
+        </div>
+        <div class="bg-emerald-50 border-2 border-emerald-200 p-4 rounded-xl">
+          <div class="font-bold text-emerald-900 text-base mb-1">線索 2：減法關係</div>
+          <p class="text-sm text-slate-700 leading-relaxed">
+            上下相減時：<br>
+            <strong>上面的數 － 減數 ＝ 餘數</strong><br>
+            所以：<strong>減數 ＋ 餘數 ＝ 上面的數</strong>！
+          </p>
+        </div>
+        <div class="bg-rose-50 border-2 border-rose-200 p-4 rounded-xl">
+          <div class="font-bold text-rose-900 text-base mb-1">線索 3：不夠除要補 0</div>
+          <p class="text-sm text-slate-700 leading-relaxed">
+            當個位數字落下來後<strong>比除數小（不夠除）</strong>時，商的個位一定要填 <strong>0</strong>，不能隨便填非零數字。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 互動步進演示區 -->
+    <section class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-6">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="flex flex-wrap gap-2">
+          <button onclick="selectCaseType(0)" id="btn-case-0" class="px-3.5 py-2 rounded-xl font-bold text-sm transition bg-sky-600 text-white shadow">
+            題型一：個位補 0（仿第12題）
+          </button>
+          <button onclick="selectCaseType(1)" id="btn-case-1" class="px-3.5 py-2 rounded-xl font-bold text-sm transition bg-white text-slate-700 border border-slate-300 hover:bg-sky-50">
+            題型二：十位有餘數（仿第13題）
+          </button>
+          <button onclick="selectCaseType(2)" id="btn-case-2" class="px-3.5 py-2 rounded-xl font-bold text-sm transition bg-white text-slate-700 border border-slate-300 hover:bg-sky-50">
+            題型三：反推除數（仿第14題）
+          </button>
+        </div>
+        <button onclick="generateRandomCase()" class="px-4 py-2 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-600 text-white shadow transition">
+          🎲 隨機生成新例子
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <!-- 左側：直式視覺化面板 -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-inner flex flex-col items-center justify-center min-h-[290px]">
+          <div id="visual-division"></div>
+        </div>
+
+        <!-- 右側：步驟說明與控制按鈕 -->
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full" id="step-badge">
+              步驟 1 / 3
+            </span>
+            <span class="text-xs text-slate-500 font-semibold" id="case-eq-hint"></span>
+          </div>
+          <h3 class="text-xl font-bold text-slate-800" id="step-title">觀察已知數字</h3>
+          <div class="bg-white p-4 rounded-xl border-l-4 border-sky-500 text-slate-700 text-base leading-relaxed min-h-[120px]" id="step-desc">
+            說明文字載入中...
+          </div>
+
+          <div class="flex items-center justify-between pt-2">
+            <button onclick="prevStep()" id="prev-btn" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition disabled:opacity-40">
+              ← 上一步
+            </button>
+            <button onclick="nextStep()" id="next-btn" class="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow transition">
+              下一步解題 →
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="mt-8 text-center">
+      <a href="math18.html" class="inline-block px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white font-extrabold rounded-xl shadow-lg transition text-lg">
+        🚀 學會了！前往挑戰 10 題隨機直式填格練習 ➔
+      </a>
+    </div>
+
+  </div>
+
+  <script>
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // 隨機產生指定題型的教學案例與解題步驟
+    function buildRandomCase(typeIdx) {
+      if (typeIdx === 0) {
+        // 題型一：個位補 0（仿第 12 題）
+        const d = getRandomInt(3, 9);
+        const q1 = getRandomInt(1, Math.floor(9 / d));
+        const b1 = d * q1;
+        const rem = getRandomInt(1, d - 1);
+        const b2 = rem;
+        const dividend = b1 * 10 + b2;
+
+        const base = { d: String(d), q1: String(q1), q2: '?', b1: String(b1), b2: '?', m1: '?', r1: '', r2: String(rem), hasSub2: false };
+        const step2 = { ...base, m1: String(b1) };
+        const step3 = { ...step2, b2: String(b2) };
+        const finalVals = { ...step3, q2: '0' };
+
+        return {
+          eq: `${dividend} ÷ ${d} ＝ ${q1}0 …… ${rem}`,
+          boxMap: { q2: true, b2: true, m1: true },
+          steps: [
+            {
+              title: "第一步：先看十位的乘法",
+              desc: `除數是 <strong>${d}</strong>，商的十位是 <strong>${q1}</strong>。<br>根據乘法口訣：<strong>${d} × ${q1} ＝ ${b1}</strong>。<br>所以第一層減數方格應該填 <strong>${b1}</strong>。`,
+              highlight: ['m1'],
+              vals: base,
+              nextVals: step2
+            },
+            {
+              title: "第二步：找出被除數的個位",
+              desc: `十位 ${b1} － ${b1} ＝ 0（剛好除盡）。<br>個位落下來直接變成最下面的餘數 <strong>${rem}</strong>。<br>可見被除數的個位方格原本就是 <strong>${b2}</strong>！`,
+              highlight: ['b2'],
+              vals: step2,
+              nextVals: step3
+            },
+            {
+              title: "第三步：關鍵陷阱！個位不夠除要補 0",
+              desc: `個位的 <strong>${b2}</strong> 比除數 <strong>${d}</strong> 小（${b2} 不夠 ${d} 除），所以商的個位必須填 <strong>0</strong>！<br>完整算式：<strong>${dividend} ÷ ${d} ＝ ${q1}0 …… ${rem}</strong>。`,
+              highlight: ['q2'],
+              vals: step3,
+              nextVals: finalVals
+            }
+          ]
+        };
+      } else if (typeIdx === 1) {
+        // 題型二：十位有餘數（仿第 13 題）
+        let d, q1, q2, b1, b2, m1, r1, m2;
+        while (true) {
+          d = getRandomInt(3, 8);
+          q1 = getRandomInt(1, Math.floor(8 / d));
+          m1 = d * q1;
+          r1 = getRandomInt(1, d - 1);
+          b1 = m1 + r1;
+          if (b1 <= 9) {
+            q2 = getRandomInt(Math.ceil((r1 * 10) / d), Math.min(9, Math.floor((r1 * 10 + 9) / d)));
+            m2 = d * q2;
+            if (m2 >= r1 * 10 && m2 <= r1 * 10 + 9) {
+              b2 = m2 - r1 * 10;
+              break;
+            }
+          }
+        }
+        const dividend = b1 * 10 + b2;
+        const m2Str = String(m2).padStart(2, '0');
+
+        const base = { d: String(d), q1: String(q1), q2: '?', b1: '?', b2: String(b2), m1: '?', r1: String(r1), r2: '?', hasSub2: true, m2: m2Str, remFinal: '' };
+        const step2 = { ...base, m1: String(m1) };
+        const step3 = { ...step2, b1: String(b1) };
+        const finalVals = { ...step3, q2: String(q2), r2: String(b2), remFinal: '0' };
+
+        return {
+          eq: `${dividend} ÷ ${d} ＝ ${q1}${q2}`,
+          boxMap: { q2: true, b1: true, m1: true, r2: true },
+          steps: [
+            {
+              title: "第一步：利用「乘法關係」找十位減數",
+              desc: `除數是 <strong>${d}</strong>，商的十位是 <strong>${q1}</strong>。<br>想一想：<strong>${d} × ${q1} ＝ ${m1}</strong>。<br>所以第一層減數方格應該填 <strong>${m1}</strong>。`,
+              highlight: ['m1'],
+              vals: base,
+              nextVals: step2
+            },
+            {
+              title: "第二步：利用「減法關係」反推被除數十位",
+              desc: `看十位直式：<strong>被除數十位 － ${m1} ＝ ${r1}</strong>。<br>用加法反推：<strong>${m1} ＋ ${r1} ＝ ${b1}</strong>！<br>所以被除數的十位方格是 <strong>${b1}</strong>。`,
+              highlight: ['b1'],
+              vals: step2,
+              nextVals: step3
+            },
+            {
+              title: "第三步：個位落下來，計算商的個位",
+              desc: `被除數個位的 <strong>${b2}</strong> 落下來，與十位餘下的 ${r1} 合起來變成 <strong>${m2}</strong>。<br>用 ${d} 的乘法口訣：<strong>${d} × ${q2} ＝ ${m2}</strong>。<br>所以商的個位填 <strong>${q2}</strong>！完整算式：<strong>${dividend} ÷ ${d} ＝ ${q1}${q2}</strong>。`,
+              highlight: ['q2', 'r2'],
+              vals: step3,
+              nextVals: finalVals
+            }
+          ]
+        };
+      } else {
+        // 題型三：反推除數（仿第 14 題）
+        let d, b1, b2, r1, q2, m2, rem;
+        while (true) {
+          d = getRandomInt(4, 8);
+          r1 = getRandomInt(1, Math.min(d - 1, 9 - d));
+          b1 = d + r1;
+          if (b1 <= 9) {
+            q2 = getRandomInt(1, 9);
+            m2 = d * q2;
+            const maxRem = Math.min(d - 1, (r1 * 10 + 9) - m2);
+            if (m2 >= r1 * 10 - 9 && maxRem >= 1) {
+              rem = getRandomInt(1, maxRem);
+              const twoDigit = m2 + rem;
+              if (twoDigit >= r1 * 10 && twoDigit <= r1 * 10 + 9 && m2 >= 10) {
+                b2 = twoDigit - r1 * 10;
+                break;
+              }
+            }
+          }
+        }
+        const dividend = b1 * 10 + b2;
+        const m2Str = String(m2).padStart(2, '0');
+
+        const base = { d: '?', q1: '1', q2: '?', b1: String(b1), b2: '?', m1: '?', r1: String(r1), r2: String(b2), hasSub2: true, m2: '??', remFinal: String(rem) };
+        const step2 = { ...base, d: String(d), m1: String(d) };
+        const step3 = { ...step2, b2: String(b2) };
+        const finalVals = { ...step3, q2: String(q2), m2: m2Str };
+
+        return {
+          eq: `${dividend} ÷ ${d} ＝ 1${q2} …… ${rem}`,
+          boxMap: { d: true, q2: true, b2: true, m1: true, m2: true },
+          steps: [
+            {
+              title: "第一步：觀察十位，反推除數",
+              desc: `被除數十位是 <strong>${b1}</strong>，下面剩餘 <strong>${r1}</strong>。<br>${b1} － 減數 ＝ ${r1}，所以十位減數是 <strong>${d}</strong>。<br>因為商的十位是 <strong>1</strong>，所以除數方格一定是 <strong>${d}</strong>！`,
+              highlight: ['d', 'm1'],
+              vals: base,
+              nextVals: step2
+            },
+            {
+              title: "第二步：看落下的數字，找被除數個位",
+              desc: `十位餘下 ${r1}，個位數字落下來後變成了 <strong>${r1}${b2}</strong>。<br>所以被除數的個位方格原本就是 <strong>${b2}</strong>！`,
+              highlight: ['b2'],
+              vals: step2,
+              nextVals: step3
+            },
+            {
+              title: "第三步：用餘數反推第二層減數與商",
+              desc: `<strong>${r1}${b2} － 減數 ＝ ${rem}（餘數）</strong>，所以第二層減數是 ${r1}${b2} － ${rem} ＝ <strong>${m2}</strong>。<br>最後看乘法口訣：${d} × <strong>${q2}</strong> ＝ ${m2}，所以商的個位填 <strong>${q2}</strong>！<br>完整算式：<strong>${dividend} ÷ ${d} ＝ 1${q2} …… ${rem}</strong>。`,
+              highlight: ['q2', 'm2'],
+              vals: step3,
+              nextVals: finalVals
+            }
+          ]
+        };
+      }
+    }
+
+    let currentTypeIdx = 0;
+    let currentCase = null;
+    let currentStepIdx = 0;
+    let showSolvedInCurrentStep = false;
+
+    function renderCell(val, key, isBox, highlightKeys) {
+      const isHighlight = highlightKeys.includes(key);
+      if (!isBox && val !== '?') {
+        return `<span class="text-slate-800">${val}</span>`;
+      }
+      let cls = "box-cell";
+      if (isHighlight) cls += " box-highlight";
+      else if (val !== '?' && val !== '??') cls += " box-solved";
+      return `<div class="${cls}">${val}</div>`;
+    }
+
+    function renderVisual() {
+      const s = currentCase.steps[currentStepIdx];
+      const v = showSolvedInCurrentStep ? s.nextVals : s.vals;
+      const hl = s.highlight;
+      const boxMap = currentCase.boxMap;
+
+      let html = `<div class="div-grid">`;
+      // 第一行：商（上方不畫橫線）
+      html += `<div></div><div></div>`;
+      html += `<div class="py-1 flex justify-center">${renderCell(v.q1, 'q1', boxMap.q1, hl)}</div>`;
+      html += `<div class="py-1 flex justify-center">${renderCell(v.q2, 'q2', boxMap.q2, hl)}</div>`;
+
+      // 第二行：除數 ) 被除數（橫線在這一行上方，商的下方）
+      html += `<div class="py-1 flex justify-center">${renderCell(v.d, 'd', boxMap.d, hl)}</div>`;
+      html += `<div class="div-bracket-cell"></div>`;
+      html += `<div class="div-dividend-top py-1">${renderCell(v.b1, 'b1', boxMap.b1, hl)}</div>`;
+      html += `<div class="div-dividend-top py-1">${renderCell(v.b2, 'b2', boxMap.b2, hl)}</div>`;
+
+      // 第三行：第一層減數
+      html += `<div></div><div></div>`;
+      html += `<div class="py-1">${renderCell(v.m1, 'm1', boxMap.m1, hl)}</div>`;
+      html += `<div></div>`;
+
+      // 減法線
+      html += `<div class="sub-line"></div>`;
+
+      // 第四行：餘數 / 落下
+      html += `<div></div><div></div>`;
+      html += `<div class="py-1">${v.r1 ? renderCell(v.r1, 'r1', false, hl) : ''}</div>`;
+      html += `<div class="py-1">${v.r2 ? renderCell(v.r2, 'r2', boxMap.r2, hl) : ''}</div>`;
+
+      if (v.hasSub2) {
+        const m2_1 = v.m2[0] || '?';
+        const m2_2 = v.m2[1] || '?';
+        html += `<div></div><div></div>`;
+        html += `<div class="py-1">${renderCell(m2_1, 'm2', boxMap.m2, hl)}</div>`;
+        html += `<div class="py-1">${renderCell(m2_2, 'm2', boxMap.m2, hl)}</div>`;
+        html += `<div class="sub-line"></div>`;
+        if (v.remFinal !== '') {
+          html += `<div></div><div></div><div></div>`;
+          html += `<div class="py-1 text-slate-800">${v.remFinal}</div>`;
+        }
+      }
+
+      html += `</div>`;
+      document.getElementById('visual-division').innerHTML = html;
+
+      document.getElementById('step-badge').innerText = `步驟 ${currentStepIdx + 1} / ${currentCase.steps.length}`;
+      document.getElementById('case-eq-hint').innerText = `算式：${currentCase.eq}`;
+      document.getElementById('step-title').innerText = s.title;
+      document.getElementById('step-desc').innerHTML = s.desc;
+
+      document.getElementById('prev-btn').disabled = currentStepIdx === 0 && !showSolvedInCurrentStep;
+      const nextBtn = document.getElementById('next-btn');
+      if (currentStepIdx === currentCase.steps.length - 1 && showSolvedInCurrentStep) {
+        nextBtn.innerText = "🎲 換一組隨機例子";
+      } else if (!showSolvedInCurrentStep) {
+        nextBtn.innerText = "填入此步答案 →";
+      } else {
+        nextBtn.innerText = "下一步解題 →";
+      }
+    }
+
+    function updateTypeButtons() {
+      for (let i = 0; i < 3; i++) {
+        const btn = document.getElementById(`btn-case-${i}`);
+        if (i === currentTypeIdx) {
+          btn.className = "px-3.5 py-2 rounded-xl font-bold text-sm transition bg-sky-600 text-white shadow";
+        } else {
+          btn.className = "px-3.5 py-2 rounded-xl font-bold text-sm transition bg-white text-slate-700 border border-slate-300 hover:bg-sky-50";
+        }
+      }
+    }
+
+    function generateRandomCase() {
+      currentCase = buildRandomCase(currentTypeIdx);
+      currentStepIdx = 0;
+      showSolvedInCurrentStep = false;
+      renderVisual();
+    }
+
+    function selectCaseType(idx) {
+      currentTypeIdx = idx;
+      updateTypeButtons();
+      generateRandomCase();
+    }
+
+    function nextStep() {
+      if (!showSolvedInCurrentStep) {
+        showSolvedInCurrentStep = true;
+        renderVisual();
+      } else if (currentStepIdx < currentCase.steps.length - 1) {
+        currentStepIdx++;
+        showSolvedInCurrentStep = false;
+        renderVisual();
+      } else {
+        generateRandomCase();
+      }
+    }
+
+    function prevStep() {
+      if (showSolvedInCurrentStep) {
+        showSolvedInCurrentStep = false;
+        renderVisual();
+      } else if (currentStepIdx > 0) {
+        currentStepIdx--;
+        showSolvedInCurrentStep = true;
+        renderVisual();
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      selectCaseType(0);
+    });
+  </script>
+</body>
+</html>

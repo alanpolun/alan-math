@@ -64,7 +64,51 @@
             loadLogs();
         };
 
-        window.loadLogs = async function() {
+        window.addEventListener('load', () => {});
+
+        // ====== 讀取策略（2026-11-25：改為「索引查詢 + 快取 + 分批」，唔再掃全部記錄）======
+        // 舊做法：where(username) + limit(300) 逐頁抓到「全部」，再在瀏覽器排序 → 記錄一多
+        // （Gracefully 已有 940 筆錯誤記錄）就要 4 次往返 + 渲染，家長要等 1-2 分鐘。
+        // 新做法：where(username) + orderBy(timestamp desc) + limit(200) → 一次查詢就拿到最新 200 筆。
+        const PAGE = 200;
+        let lastDoc = null;
+        let loading = false;
+
+        // 一次性索引（username ASC, timestamp DESC）—— 建好之後此頁只需 1 次查詢（~0.7 秒）
+        const INDEX_URL = 'https://console.firebase.google.com/v1/r/project/p2math-791c8/firestore/indexes?create_composite=ClJwcm9qZWN0cy9wMm1hdGgtNzkxYzgvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL2luY29ycmVjdC1sb2cvaW5kZXhlcy9fEAEaDAoIdXNlcm5hbWUQARoNCgl0aW1lc3RhbXAQAhoMCghfX25hbWVfXxAC';
+
+        const cacheKey = (u, t) => `alanmath_log_${u}_${t}`;
+        function readCache(u, t) {
+            try { return JSON.parse(localStorage.getItem(cacheKey(u, t)) || 'null'); } catch (e) { return null; }
+        }
+        function writeCache(u, t, docs) {
+            try { localStorage.setItem(cacheKey(u, t), JSON.stringify({ at: Date.now(), docs: docs })); } catch (e) {}
+        }
+
+        function renderDocs(list, docs) {
+            docs.forEach((data) => {
+                if (currentTab === 'test-log') renderTestLog(list, data.id, data);
+                else renderIncorrectLog(list, data.id, data);
+            });
+        }
+
+        function docsFromSnapshot(snap) {
+            return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        function addMoreButton(list, count) {
+            const old = document.getElementById('load-more');
+            if (old) old.remove();
+            if (count < PAGE) return;
+            const btn = document.createElement('button');
+            btn.id = 'load-more';
+            btn.className = 'mx-auto mt-6 px-8 py-3 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-lg shadow';
+            btn.textContent = '載入更舊的 200 筆';
+            btn.onclick = () => loadLogs(false, true);
+            list.parentElement.appendChild(btn);
+        }
+
+        window.loadLogs = async function (force, append) {
             if (!currentUsername) {
                 document.getElementById('log-list').innerHTML = '<p class="text-gray-500 text-center">請先登入以查看記錄</p>';
                 return;
@@ -72,71 +116,127 @@
 
             const list = document.getElementById('log-list');
             const empty = document.getElementById('empty');
-            list.innerHTML = '<p class="text-gray-500 text-center">載入中...</p>';
-            empty.classList.add('hidden');
+
+            if (!window.db) {
+                setTimeout(() => window.loadLogs(force, append), 500);
+                return;
+            }
+
+            if (!append) {
+                // 先畫快取（即時見到上次結果），再背景更新
+                const cached = readCache(currentUsername, currentTab);
+                if (cached && Array.isArray(cached.docs) && cached.docs.length) {
+                    list.innerHTML = `<p class="text-gray-500 text-center mb-4">顯示上次載入的 ${cached.docs.length} 筆（更新中…）</p>`;
+                    renderDocs(list, cached.docs);
+                } else {
+                    list.innerHTML = '<p class="text-gray-500 text-center">載入中...</p>';
+                }
+                empty.classList.add('hidden');
+                lastDoc = null;
+            }
+
+            if (loading) return;
+            loading = true;
 
             try {
-                // Ensure auth.js has initialized window.db
-                if (!window.db) {
-                     setTimeout(loadLogs, 500);
-                     return;
-                }
+                const parts = [
+                    window.collection(window.db, currentTab),
+                    window.where("username", "==", currentUsername),
+                    window.orderBy("timestamp", "desc"),
+                    window.limit(PAGE)
+                ];
+                if (append && lastDoc) parts.push(startAfter(lastDoc));
 
-                // 逐頁讀取「這個用戶」的全部記錄。
-                // 舊寫法只做 where(username) + limit(100)：Firestore 按文件 ID 排序取前 100 筆，
-                // 不是最新 100 筆 —— 記錄一多（例如 Po Lun 已有 234 筆），新記錄就會被截在外面，
-                // 家長在「錯誤記錄」只看到零星幾筆。改為用 startAfter 分頁抓到全部，再在瀏覽器排序。
-                const PAGE = 300;
-                let cursor = null, allDocs = [];
-                for (let page = 0; page < 40; page++) {
-                    const parts = [
-                        window.collection(window.db, currentTab),
-                        window.where("username", "==", currentUsername)
-                    ];
-                    if (cursor) parts.push(startAfter(cursor));
-                    parts.push(window.limit(PAGE));
-                    const snap = await window.getDocs(window.query(...parts));
-                    allDocs = allDocs.concat(snap.docs);
-                    if (snap.docs.length < PAGE) break;
-                    cursor = snap.docs[snap.docs.length - 1];
-                }
+                const snap = await window.getDocs(window.query(...parts));
+                const docs = docsFromSnapshot(snap);
 
-                if (allDocs.length === 0) {
+                if (snap.docs.length) lastDoc = snap.docs[snap.docs.length - 1];
+
+                if (!append) {
                     list.innerHTML = '';
+                    const note = document.createElement('p');
+                    note.className = 'text-gray-500 text-center mb-4';
+                    note.textContent = docs.length
+                        ? `顯示最新 ${docs.length} 筆${docs.length === PAGE ? '（可繼續載入更舊的記錄）' : ''}`
+                        : '';
+                    if (docs.length) list.appendChild(note);
+                }
+
+                if (docs.length === 0 && !append) {
                     empty.classList.remove('hidden');
+                    list.innerHTML = '';
+                    loading = false;
                     return;
                 }
-
-                // Sort client-side to avoid composite index requirement
-                let docs = allDocs.map(doc => ({ id: doc.id, ...doc.data() }));
-                docs.sort((a, b) => {
-                    const timeA = a.timestamp || "";
-                    const timeB = b.timestamp || "";
-                    return timeB.localeCompare(timeA);
-                });
-                const totalCount = docs.length;
-                const MAX_RENDER = 200;
-                const truncated = totalCount > MAX_RENDER;
-                if (truncated) docs = docs.slice(0, MAX_RENDER);
-
                 empty.classList.add('hidden');
-                list.innerHTML = truncated
-                    ? `<p class="text-gray-500 text-center mb-4">共 ${totalCount} 筆記錄，顯示最新 ${MAX_RENDER} 筆</p>`
-                    : '';
 
-                docs.forEach((data) => {
-                    const id = data.id;
-                    if (currentTab === 'test-log') {
-                        renderTestLog(list, id, data);
-                    } else {
-                        renderIncorrectLog(list, id, data);
-                    }
-                });
+                const holder = document.createElement('div');
+                holder.className = 'space-y-4';
+                renderDocs(holder, docs);
+                while (holder.firstChild) list.appendChild(holder.firstChild);
+
+                if (!append) writeCache(currentUsername, currentTab, docs);
+                addMoreButton(list, snap.docs.length);
             } catch (e) {
-                list.innerHTML = `<p class="text-red-500">載入失敗：${e.message}</p>`;
+                const msg = String(e && e.message || e);
+                const linkMatch = msg.match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/);
+                if (linkMatch || /index/i.test(msg)) {
+                    // 索引未建立：先照舊方法（分頁掃描）拿到資料，唔會令家長乜都睇唔到
+                    try {
+                        const docs = await legacyFetchAll();
+                        list.innerHTML = '';
+                        const banner = document.createElement('div');
+                        banner.className = 'bg-amber-50 border-2 border-amber-400 rounded-2xl p-4 text-amber-900 mb-3';
+                        banner.innerHTML = '<p class="font-bold">⚡ 想載入得更快？建立一次性索引（約 1-2 分鐘）：' +
+                            `<a class="underline break-all" target="_blank" href="${linkMatch ? linkMatch[0] : INDEX_URL}">按此建立</a>` +
+                            '。建立後此頁只需 1 次查詢（約 0.7 秒）。</p>';
+                        list.appendChild(banner);
+                        if (docs.length === 0) {
+                            empty.classList.remove('hidden');
+                        } else {
+                            empty.classList.add('hidden');
+                            const note = document.createElement('p');
+                            note.className = 'text-gray-500 text-center mb-4';
+                            note.textContent = `共 ${docs.length} 筆記錄，顯示最新 ${Math.min(docs.length, 200)} 筆`;
+                            list.appendChild(note);
+                            const holder = document.createElement('div');
+                            holder.className = 'space-y-4';
+                            renderDocs(holder, docs.slice(0, 200));
+                            while (holder.firstChild) list.appendChild(holder.firstChild);
+                            writeCache(currentUsername, currentTab, docs.slice(0, 200));
+                        }
+                    } catch (e2) {
+                        list.innerHTML = `<p class="text-red-500">載入失敗：${String(e2 && e2.message || e2)}</p>`;
+                        console.error(e2);
+                    }
+                } else {
+                    list.innerHTML = `<p class="text-red-500">載入失敗：${msg}</p>`;
+                }
                 console.error(e);
+            } finally {
+                loading = false;
             }
         };
+
+        // 舊方法（無索引時後備）：分頁掃描全部，再在瀏覽器排序
+        async function legacyFetchAll() {
+            const PAGE_SIZE = 300;
+            let cursor = null, all = [];
+            for (let page = 0; page < 40; page++) {
+                const parts = [
+                    window.collection(window.db, currentTab),
+                    window.where("username", "==", currentUsername),
+                    window.limit(PAGE_SIZE)
+                ];
+                if (cursor) parts.push(startAfter(cursor));
+                const snap = await window.getDocs(window.query(...parts));
+                all = all.concat(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+                if (snap.docs.length < PAGE_SIZE) break;
+                cursor = snap.docs[snap.docs.length - 1];
+            }
+            all.sort((a, b) => String(b.timestamp || "").localeCompare(String(a.timestamp || "")));
+            return all;
+        }
 
         function renderTestLog(list, id, data) {
             const div = document.createElement('div');
@@ -157,16 +257,30 @@
         function renderIncorrectLog(list, id, data) {
             const div = document.createElement('div');
             div.className = 'bg-white rounded-2xl p-6 shadow-md border-l-8 border-red-400';
+            const blanks = Array.isArray(data.blanks) ? data.blanks : null;
+            let bodyHtml;
+            if (blanks && blanks.length) {
+                // 新格式：一題一份文件，內含逐格明細（記錄量少、但仍然逐格顯示）
+                bodyHtml = '<div class="space-y-2 mt-1">' + blanks.map(b => `
+                    <div class="flex flex-wrap items-baseline gap-x-6 gap-y-1 text-lg">
+                        <span class="text-slate-500 font-bold min-w-[8.5rem]">${b.label || '空格'}</span>
+                        <span class="text-green-600">正確答案：<strong>${b.correctAnswer ?? 'N/A'}</strong></span>
+                        <span class="text-red-500">學生答案：<strong>${b.studentAnswer ?? 'N/A'}</strong></span>
+                    </div>`).join('') + '</div>';
+            } else {
+                bodyHtml = `
+                    <div class="flex gap-8 text-lg">
+                        <span class="text-green-600">正確答案：<strong>${data.correctAnswer ?? 'N/A'}</strong></span>
+                        <span class="text-red-500">學生答案：<strong>${data.studentAnswer ?? 'N/A'}</strong></span>
+                    </div>`;
+            }
             div.innerHTML = `
                 <div class="flex justify-between items-start mb-3">
                     <span class="text-xs text-gray-400">${id}</span>
                     <span class="text-xs text-gray-400">${data.timestamp || 'N/A'}</span>
                 </div>
                 <p class="text-xl font-bold text-slate-800 mb-2">題目：${data.question || 'N/A'}</p>
-                <div class="flex gap-8 text-lg">
-                    <span class="text-green-600">正確答案：<strong>${data.correctAnswer ?? 'N/A'}</strong></span>
-                    <span class="text-red-500">學生答案：<strong>${data.studentAnswer ?? 'N/A'}</strong></span>
-                </div>
+                ${bodyHtml}
             `;
             list.appendChild(div);
         }

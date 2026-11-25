@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小三數學：直式除法填格（除數謎）練習</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module" src="auth.js" onerror="console.warn('離線/本地模式運行');"></script>
+  <style>
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+    .div-grid {
+      display: grid;
+      grid-template-columns: 42px 14px 44px 44px;
+      align-items: center;
+      justify-items: center;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+    .div-input {
+      width: 36px;
+      height: 36px;
+      border: 2px solid #f59e0b;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: 800;
+      background-color: #fffbeb;
+      color: #b45309;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .div-input:focus {
+      border-color: #d97706;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+    }
+    .div-input.correct {
+      border-color: #16a34a;
+      background-color: #dcfce7;
+      color: #15803d;
+    }
+    .div-input.wrong {
+      border-color: #dc2626;
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+    .div-bracket-cell {
+      width: 100%;
+      height: 40px;
+      border-top: 2.5px solid #1e293b;
+      border-left: 2.5px solid #1e293b;
+      border-top-left-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .div-dividend-top {
+      width: 100%;
+      height: 40px;
+      border-top: 2.5px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sub-line {
+      border-bottom: 2.5px solid #1e293b;
+      width: 100%;
+      grid-column: 3 / 5;
+      height: 3px;
+      margin: 2px 0;
+    }
+  </style>
+  <style>
+    /* 小三閱讀字級（Alan 2026-11-24：解題框 24px、標籤 16px） */
+    .div-explain { font-size: 24px; line-height: 1.65; }
+    .div-explain span { font-size: 24px; }
+  </style>
+</head>
+<body class="bg-amber-50 min-h-screen py-8 px-4 font-sans text-slate-800">
+
+  <a href="index.html#year3" style="position: fixed; top: 20px; left: 20px; background: #4A90E2; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;">← Go Back</a>
+
+  <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl border-4 border-amber-300 p-6 md:p-10">
+    
+    <header class="border-b-2 border-dashed border-amber-200 pb-6 mb-8 text-center">
+      <div class="inline-block bg-amber-400 text-amber-950 text-xs md:text-sm font-bold px-4 py-1 rounded-full mb-2">
+        小學三年級數學科研習練習
+      </div>
+      <h1 class="text-2xl md:text-4xl font-extrabold text-slate-800 tracking-tight">
+        單元：直式除法填格（除數謎訓練）
+      </h1>
+      <p class="text-slate-500 text-sm md:text-base mt-2">
+        請把適當的數字（0 至 9）填在直式方格內。完成後點擊頁尾的「交卷並對答案」。
+      </p>
+      <div class="mt-3">
+        <a href="math17.html" class="text-sm font-bold text-sky-600 hover:text-sky-800 underline">
+          💡 忘記怎麼推理？點擊這裡觀看「互動解題教學」
+        </a>
+      </div>
+    </header>
+
+    <form id="quiz-form" class="space-y-8">
+      <div id="questions-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+
+      <div class="pt-6 border-t-2 border-amber-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <button type="button" onclick="generateQuiz()" class="w-full sm:w-auto px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition flex items-center justify-center gap-2">
+          🔄 生成新練習
+        </button>
+        <button type="button" id="submit-btn" onclick="checkAnswers()" class="w-full sm:w-auto px-8 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+          ✏️ 交卷並對答案
+        </button>
+      </div>
+    </form>
+
+    <div id="result-board" class="hidden mt-8 p-6 bg-slate-50 rounded-xl border-2 border-slate-200">
+      <div class="text-center mb-6">
+        <span class="text-sm font-semibold text-slate-500">練習得分</span>
+        <div id="score-text" class="text-4xl font-black text-amber-600 my-1">0 / 10</div>
+        <p id="feedback-text" class="text-slate-600 font-medium"></p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    let quizData = [];
+    let isSubmitted = false;
+    let quizStartTime = null;
+
+    function createDivisionProblem(id, typeRoll) {   // typeRoll passed in so the order can be shuffled
+
+      if (typeRoll === 1) {
+        const divisor = getRandomInt(3, 9);
+        const q1 = getRandomInt(1, Math.floor(9 / divisor));
+        const b1 = divisor * q1;
+        const rem = getRandomInt(1, divisor - 1);
+        const b2 = rem;
+        const dividend = b1 * 10 + b2;
+
+        return {
+          id,
+          typeLabel: '題型一：個位補 0',
+          equation: `${dividend} ÷ ${divisor} ＝ ${q1}0 …… ${rem}`,
+          explain: `十位 ${divisor} × ${q1} ＝ ${b1}；個位 ${b2} 落下來成為餘數 ${rem}，因為 ${b2} 不夠 ${divisor} 除，商的個位必須補 0！`,
+          layout: {
+            d: { val: divisor, isBox: false },
+            q1: { val: q1, isBox: false },
+            q2: { val: 0, isBox: true },
+            b1: { val: b1, isBox: false },
+            b2: { val: b2, isBox: true },
+            m1: { val: b1, isBox: true },
+            r1: { val: '', isBox: false },
+            r2: { val: rem, isBox: false },
+            hasSub2: false
+          }
+        };
+      } else if (typeRoll === 2) {
+        let divisor, q1, q2, b1, b2, m1, r1, m2, rem;
+        while (true) {
+          divisor = getRandomInt(3, 8);
+          q1 = getRandomInt(1, Math.floor(8 / divisor));
+          m1 = divisor * q1;
+          r1 = getRandomInt(1, divisor - 1);
+          b1 = m1 + r1;
+          if (b1 <= 9) {
+            q2 = getRandomInt(Math.ceil((r1 * 10) / divisor), Math.min(9, Math.floor((r1 * 10 + 9) / divisor)));
+            m2 = divisor * q2;
+            if (m2 >= r1 * 10 && m2 <= r1 * 10 + 9) {
+              b2 = m2 - r1 * 10;
+              rem = 0;
+              break;
+            }
+          }
+        }
+        const dividend = b1 * 10 + b2;
+
+        return {
+          id,
+          typeLabel: '題型二：十位有餘數',
+          equation: `${dividend} ÷ ${divisor} ＝ ${q1}${q2}`,
+          explain: `十位減數 ＝ ${divisor} × ${q1} ＝ ${m1}；被除數十位 ＝ ${m1} ＋ ${r1} ＝ ${b1}；個位 ${b2} 落下成 ${m2}，商的個位 ＝ ${m2} ÷ ${divisor} ＝ ${q2}。`,
+          layout: {
+            d: { val: divisor, isBox: false },
+            q1: { val: q1, isBox: false },
+            q2: { val: q2, isBox: true },
+            b1: { val: b1, isBox: true },
+            b2: { val: b2, isBox: false },
+            m1: { val: m1, isBox: true },
+            r1: { val: r1, isBox: false },
+            r2: { val: b2, isBox: true },
+            hasSub2: true,
+            m2_1: { val: Math.floor(m2 / 10), isBox: false },
+            m2_2: { val: m2 % 10, isBox: false },
+            remFinal: rem
+          }
+        };
+      } else {
+        let divisor, b1, b2, r1, q2, m2, rem;
+        while (true) {
+          divisor = getRandomInt(4, 8);
+          r1 = getRandomInt(1, Math.min(divisor - 1, 9 - divisor));
+          b1 = divisor + r1;
+          if (b1 <= 9) {
+            q2 = getRandomInt(1, 9);
+            m2 = divisor * q2;
+            const maxRem = Math.min(divisor - 1, (r1 * 10 + 9) - m2);
+            if (m2 >= r1 * 10 - 9 && maxRem >= 1) {
+              rem = getRandomInt(1, maxRem);
+              const twoDigit = m2 + rem;
+              if (twoDigit >= r1 * 10 && twoDigit <= r1 * 10 + 9 && m2 >= 10) {
+                b2 = twoDigit - r1 * 10;
+                break;
+              }
+            }
+          }
+        }
+        const dividend = b1 * 10 + b2;
+
+        return {
+          id,
+          typeLabel: '題型三：反推除數',
+          equation: `${dividend} ÷ ${divisor} ＝ 1${q2} …… ${rem}`,
+          explain: `十位 ${b1} － 減數 ＝ ${r1}，所以十位減數是 ${divisor}，反推出除數 ＝ ${divisor}；個位落下成 ${r1}${b2}，減去餘數 ${rem} 得第二層減數 ${m2}，因此商的個位 ＝ ${m2} ÷ ${divisor} ＝ ${q2}。`,
+          layout: {
+            d: { val: divisor, isBox: true },
+            q1: { val: 1, isBox: false },
+            q2: { val: q2, isBox: true },
+            b1: { val: b1, isBox: false },
+            b2: { val: b2, isBox: true },
+            m1: { val: divisor, isBox: true },
+            r1: { val: r1, isBox: false },
+            r2: { val: b2, isBox: false },
+            hasSub2: true,
+            m2_1: { val: Math.floor(m2 / 10), isBox: true },
+            m2_2: { val: m2 % 10, isBox: true },
+            remFinal: rem
+          }
+        };
+      }
+    }
+
+    function renderNode(qId, key, node) {
+      if (!node.isBox) {
+        return `<span class="text-slate-800">${node.val}</span>`;
+      }
+      return `<input type="number" min="0" max="9" maxlength="1" id="q_${qId}_${key}" data-ans="${node.val}" class="div-input" oninput="handleInputAutoNext(this)">`;
+    }
+
+    function handleInputAutoNext(el) {
+      if (el.value.length > 1) {
+        el.value = el.value.slice(0, 1);
+      }
+      if (el.value.length === 1) {
+        const inputs = Array.from(document.querySelectorAll('.div-input'));
+        const idx = inputs.indexOf(el);
+        if (idx >= 0 && idx < inputs.length - 1) {
+          inputs[idx + 1].focus();
+        }
+      }
+    }
+
+    function generateQuiz() {
+      quizData = [];
+      isSubmitted = false;
+      quizStartTime = Date.now();
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+      document.getElementById('result-board').classList.add('hidden');
+
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) submitBtn.classList.remove('hidden');
+
+      // 三種題型固定 4/3/3，但次序每輪打亂（Alan 2026-11-24）
+      const typeBag = [1, 2, 0, 1, 2, 0, 1, 2, 0, 1];
+      for (let k = typeBag.length - 1; k > 0; k--) {
+        const j = Math.floor(Math.random() * (k + 1));
+        const tmp = typeBag[k]; typeBag[k] = typeBag[j]; typeBag[j] = tmp;
+      }
+
+      for (let i = 1; i <= 10; i++) {
+        const q = createDivisionProblem(i, typeBag[i - 1]);
+        quizData.push(q);
+        const L = q.layout;
+
+        const card = document.createElement('div');
+        card.className = 'bg-amber-50/50 rounded-xl p-5 border border-amber-200 flex flex-col justify-between';
+
+        let gridHtml = `<div class="div-grid mx-auto my-2">`;
+        // 商（上方無橫線）
+        gridHtml += `<div></div><div></div>`;
+        gridHtml += `<div class="py-1 flex justify-center">${renderNode(q.id, 'q1', L.q1)}</div>`;
+        gridHtml += `<div class="py-1 flex justify-center">${renderNode(q.id, 'q2', L.q2)}</div>`;
+
+        // 除數 ) 被除數（橫線在此列上方）
+        gridHtml += `<div class="py-1 flex justify-center">${renderNode(q.id, 'd', L.d)}</div>`;
+        gridHtml += `<div class="div-bracket-cell"></div>`;
+        gridHtml += `<div class="div-dividend-top py-1">${renderNode(q.id, 'b1', L.b1)}</div>`;
+        gridHtml += `<div class="div-dividend-top py-1">${renderNode(q.id, 'b2', L.b2)}</div>`;
+
+        // 第一層減數
+        gridHtml += `<div></div><div></div>`;
+        gridHtml += `<div class="py-1">${renderNode(q.id, 'm1', L.m1)}</div>`;
+        gridHtml += `<div></div>`;
+        gridHtml += `<div class="sub-line"></div>`;
+
+        // 餘數 / 落下
+        gridHtml += `<div></div><div></div>`;
+        gridHtml += `<div class="py-1">${L.r1.val !== '' ? renderNode(q.id, 'r1', L.r1) : ''}</div>`;
+        gridHtml += `<div class="py-1">${L.r2.val !== '' ? renderNode(q.id, 'r2', L.r2) : ''}</div>`;
+
+        if (L.hasSub2) {
+          gridHtml += `<div></div><div></div>`;
+          gridHtml += `<div class="py-1">${renderNode(q.id, 'm2_1', L.m2_1)}</div>`;
+          gridHtml += `<div class="py-1">${renderNode(q.id, 'm2_2', L.m2_2)}</div>`;
+          gridHtml += `<div class="sub-line"></div>`;
+          gridHtml += `<div></div><div></div><div></div>`;
+          gridHtml += `<div class="py-1 text-slate-800">${L.remFinal}</div>`;
+        }
+        gridHtml += `</div>`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="bg-amber-500 text-white font-bold text-base px-2.5 py-1 rounded-md">第 ${i} 題</span>
+              <span class="text-base font-semibold text-amber-800 bg-amber-100 px-2 py-1 rounded">${q.typeLabel}</span>
+            </div>
+            ${gridHtml}
+          </div>
+          <div id="explain_${q.id}" class="div-explain hidden mt-4 p-3 bg-white/90 rounded-lg border border-amber-200 text-slate-700 leading-relaxed">
+            <span class="font-bold text-amber-700">【完整算式】${q.equation}</span><br>
+            ${q.explain}
+          </div>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    const TEST_NAME = "➗ 直式除法填格（除數謎）";
+
+    function getHKTTimestamp() {
+      const now = new Date();
+      const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+      return hkt.toISOString().replace('T', ' ').slice(0, 19);
+    }
+
+    function getSafeUsername() {
+      try {
+        return (window.getUsername && window.getUsername()) || "訪客";
+      } catch (e) {
+        return "訪客";
+      }
+    }
+
+    // ===== 不靜默失敗的寫入層（math15 已驗證做法）=====
+    const PENDING_KEY = "math18_pending_logs";
+    let saveWarned = false;
+
+    // auth.js 係 module，可能比本頁 script 遲載入：一定要等，唔可以「冇就當成功」
+    function fbReady() {
+      return !!(window.db && window.addDoc && window.collection);
+    }
+
+    function waitForFb(timeoutMs) {
+      const limit = timeoutMs || 6000;
+      return new Promise(function (resolve) {
+        if (fbReady()) return resolve(true);
+        const t0 = Date.now();
+        const iv = setInterval(function () {
+          if (fbReady()) { clearInterval(iv); resolve(true); }
+          else if (Date.now() - t0 > limit) { clearInterval(iv); resolve(false); }
+        }, 250);
+      });
+    }
+
+    // 黃色橫幅：成績未存入時一定要讓小朋友／家長睇到
+    function showSaveWarning(early) {
+      if (saveWarned || document.getElementById('save-warning')) return;
+      saveWarned = true;
+      const isFile = location.protocol === 'file:';
+      const bar = document.createElement('div');
+      bar.id = 'save-warning';
+      bar.className = 'fixed bottom-0 left-0 right-0 z-[300] bg-amber-100 border-t-4 border-amber-500 text-amber-900 px-4 py-3 text-base font-bold text-center leading-relaxed';
+      let msg;
+      if (early) {
+        msg = '⚠️ 此頁以「檔案」方式開啟（file://），瀏覽器會封鎖 Firebase —— 這次練習的成績<b>不會</b>存入學習記錄。' +
+              '<br>請改用網站網址開啟：<b>http://localhost:3000/math18.html</b> 或 <b>https://centered-flame-vrg6.here.now/math18.html</b>';
+      } else if (isFile) {
+        msg = '⚠️ 這次的成績<b>未能</b>存入學習記錄（file:// 開啟會封鎖 Firebase）。' +
+              '<br>請改用網站網址開啟後再做一次：<b>http://localhost:3000/math18.html</b>';
+      } else {
+        msg = '⚠️ 這次的成績<b>未能</b>存入學習記錄（Firebase 未載入或寫入失敗）。已暫存在本機，下次用正常網頁開啟時會自動補寫。';
+      }
+      bar.innerHTML = msg + ' <span style="text-decoration:underline;cursor:pointer">（關閉）</span>';
+      bar.querySelector('span').onclick = function () { bar.remove(); };
+      document.body.appendChild(bar);
+    }
+
+    // 失敗時暫存本機，下次成功載入時自動補寫（唔會白做）
+    function queuePending(coll, data) {
+      try {
+        const q = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+        q.push({ coll: coll, data: data });
+        localStorage.setItem(PENDING_KEY, JSON.stringify(q));
+      } catch (e) { /* localStorage 被封鎖都冇辦法 */ }
+    }
+
+    async function flushPending() {
+      if (!fbReady()) return;
+      let q = [];
+      try { q = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch (e) { q = []; }
+      if (!q.length) return;
+      const keep = [];
+      for (let i = 0; i < q.length; i++) {
+        try {
+          await window.addDoc(window.collection(window.db, q[i].coll), q[i].data);
+        } catch (e) {
+          keep.push(q[i]);
+        }
+      }
+      try { localStorage.setItem(PENDING_KEY, JSON.stringify(keep)); } catch (e) {}
+    }
+
+    async function writeDoc(coll, data) {
+      if (!(await waitForFb(6000))) {
+        queuePending(coll, data);
+        showSaveWarning(false);
+        return false;
+      }
+      try {
+        await window.addDoc(window.collection(window.db, coll), data);
+        return true;
+      } catch (e) {
+        queuePending(coll, data);
+        showSaveWarning(false);
+        return false;
+      }
+    }
+
+    async function logEntrance() {
+      await writeDoc("test-log", {
+        username: getSafeUsername(),
+        test: TEST_NAME,
+        timestamp: getHKTTimestamp(),
+        status: "entered"
+      });
+    }
+
+    async function saveCompletion(totalScore, totalTimeSec) {
+      await writeDoc("test-log", {
+        username: getSafeUsername(),
+        test: TEST_NAME,
+        score: totalScore,
+        timespend: Math.floor(totalTimeSec / 60) + "分" + (totalTimeSec % 60) + "秒",
+        timestamp: getHKTTimestamp()
+      });
+    }
+
+    async function saveIncorrectAnswers(records) {
+      const timestamp = getHKTTimestamp();
+      for (let i = 0; i < records.length; i++) {
+        const r = records[i];
+        const blanks = Array.isArray(r.blanks) ? r.blanks : [];
+        const doc = {
+          username: getSafeUsername(),
+          question: r.question,
+          timestamp: timestamp
+        };
+        if (blanks.length) {
+          doc.blanks = blanks;                                  // 逐格明細（新格式）
+          doc.correctAnswer = blanks.map(b => b.correctAnswer).join(', ');   // 舊欄位，向下相容
+          doc.studentAnswer = blanks.map(b => b.studentAnswer).join(', ');
+        } else {
+          doc.correctAnswer = r.correctAnswer;
+          doc.studentAnswer = r.studentAnswer;
+        }
+        await writeDoc("incorrect-log", doc);
+      }
+    }
+
+    window.onUserSet = function () {
+      flushPending();
+      logEntrance();
+    };
+
+    document.addEventListener('wheel', (event) => {
+      if (document.activeElement && document.activeElement.type === 'number') {
+        event.preventDefault();
+      }
+    }, { passive: false });
+
+    // 空格中文名稱（錯誤記錄逐格用）
+    const CELL_LABEL = {
+      d: '除數', q1: '商的十位', q2: '商的個位',
+      b1: '被除數十位', b2: '被除數個位',
+      m1: '第一層減數', r2: '落下的數字',
+      m2_1: '第二層減數十位', m2_2: '第二層減數個位'
+    };
+
+    function checkAnswers() {
+      if (isSubmitted) return;
+      isSubmitted = true;
+
+      const submitBtn = document.getElementById('submit-btn');
+      if (submitBtn) submitBtn.classList.add('hidden');
+
+      let score = 0;
+      const wrongRecords = [];
+
+      quizData.forEach(q => {
+        const inputs = Array.from(document.querySelectorAll(`[id^="q_${q.id}_"]`));
+        let allCorrect = true;
+        const stuList = [];
+        const ansList = [];
+        const wrongBlanks = [];
+
+        inputs.forEach(inp => {
+          const val = inp.value.trim();
+          const ans = inp.getAttribute('data-ans');
+          stuList.push(val || '空');
+          ansList.push(ans);
+
+          inp.disabled = true;
+          if (val === ans) {
+            inp.classList.add('correct');
+          } else {
+            inp.classList.add('wrong');
+            allCorrect = false;
+            const key = (inp.id || '').split('_').slice(2).join('_');
+            wrongBlanks.push({
+              label: CELL_LABEL[key] || key,
+              correctAnswer: ans,
+              studentAnswer: val || '未填'
+            });
+          }
+        });
+
+        if (allCorrect) score++;
+
+        // 逐格教學但唔逐格開文件：一題一份（blanks 陣列），記錄量約 ÷4（Alan 2026-11-25）
+        if (wrongBlanks.length) {
+          wrongRecords.push({
+            question: `第${q.id}題 ${q.typeLabel}（${q.equation}）`,
+            blanks: wrongBlanks
+          });
+        }
+
+        const explainBox = document.getElementById(`explain_${q.id}`);
+        explainBox.classList.remove('hidden');
+        if (allCorrect) {
+          explainBox.classList.add('bg-green-50', 'border-green-300');
+        } else {
+          explainBox.classList.add('bg-red-50', 'border-red-300');
+        }
+      });
+
+      const board = document.getElementById('result-board');
+      const scoreText = document.getElementById('score-text');
+      const feedbackText = document.getElementById('feedback-text');
+
+      scoreText.innerText = `${score} / 10`;
+      if (score === 10) {
+        feedbackText.innerText = "🌟 太厲害了！10 題全對！你已經完全掌握直式除法填格的推理技巧了！";
+      } else if (score >= 7) {
+        feedbackText.innerText = "👍 表現很好！請看看紅框方格的【完整算式】與解析，再挑戰一次吧！";
+      } else {
+        feedbackText.innerText = "💪 除數謎需要一點逆向思考，先點擊頂部的「互動解題教學」看看秘笈再來挑戰！";
+      }
+
+      board.classList.remove('hidden');
+      board.scrollIntoView({ behavior: 'smooth' });
+
+      const totalTimeSec = quizStartTime ? Math.floor((Date.now() - quizStartTime) / 1000) : 0;
+      saveCompletion(score * 10, totalTimeSec);
+      if (wrongRecords.length > 0) {
+        saveIncorrectAnswers(wrongRecords);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      generateQuiz();
+      try {
+        if (window.getUsername && window.getUsername() !== "訪客") {
+          logEntrance();
+        }
+      } catch (e) {}
+    });
+
+    // 以 file://（雙擊開檔）開啟就即刻提示，唔好等小朋友做完 10 題才發現冇記錄
+    if (location.protocol === 'file:') {
+      document.addEventListener('DOMContentLoaded', function () { showSaveWarning(true); });
+    }
+    // 之前寫唔入 Firestore 嘅紀錄，正常網頁載入時自動補寫
+    window.addEventListener('load', function () { flushPending(); });
+  </script>
+</body>
+</html>
