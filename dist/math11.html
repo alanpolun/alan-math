@@ -210,39 +210,71 @@
 
     <script>
         let currentQuizzes = [];
+        // ---- no-duplicate drawing (2026-11-27) -------------------------------------
+        // Old code drew each of the 5 questions independently (Math.random() per question),
+        // so the same division pair could easily appear twice in one set — and again right
+        // after pressing "產生 5 題全新任務". Now we enumerate every legal pair once,
+        // shuffle it, and take 5 that were not used in the previous set.
+        // Legal pair: divisor 3-9, dividend 10-99, two-digit quotient, non-zero remainder,
+        // dividend not a multiple of 5 or 10.
+        const PAIR_POOL = (function () {
+            const pool = [];
+            for (let d = 3; d <= 9; d++) {
+                for (let n = 10; n <= 99; n++) {
+                    const q = Math.floor(n / d);
+                    if (q > 10 && n % d > 0 && n % 5 !== 0 && n % 10 !== 0) pool.push([n, d]);
+                }
+            }
+            return pool;
+        })();
+        let lastSetKeys = new Set();   // "dividend/divisor" strings from the previous round
+
+        function shuffleCopy(arr) {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function drawUniquePairs(count) {
+            const key = ([n, d]) => n + '/' + d;
+            // first pass: pairs not used last round, and no repeated dividend inside the set
+            let picked = [], usedDividend = new Set(), usedKey = new Set();
+            for (const p of shuffleCopy(PAIR_POOL)) {
+                if (picked.length === count) break;
+                if (usedKey.has(key(p)) || usedDividend.has(p[0])) continue;
+                if (lastSetKeys.has(key(p))) continue;
+                picked.push(p); usedKey.add(key(p)); usedDividend.add(p[0]);
+            }
+            // fallback (only if the excluded set is huge): allow last round's pairs,
+            // but still never repeat one inside the same set
+            if (picked.length < count) {
+                for (const p of shuffleCopy(PAIR_POOL)) {
+                    if (picked.length === count) break;
+                    if (usedKey.has(key(p)) || usedDividend.has(p[0])) continue;
+                    picked.push(p); usedKey.add(key(p)); usedDividend.add(p[0]);
+                }
+            }
+            lastSetKeys = new Set(picked.map(key));
+            return picked;
+        }
 
         function generateQuizzes() {
             const container = document.getElementById('quiz-container');
             if (!container) return;
-            
-            container.innerHTML = ''; 
-            currentQuizzes = [];      
 
-            for (let i = 0; i < 5; i++) {
-                let divisor = 3;
-                let dividend = 43; 
-                let quotient = 14;
-                let remainder = 1;
-                
-                let valid = false;
-                let attempts = 0;
-                
-                while (!valid && attempts < 200) {
-                    attempts++;
-                    let randDivisor = Math.floor(Math.random() * 7) + 3;      
-                    let randDividend = Math.floor(Math.random() * 90) + 10;   
-                    
-                    let randQuotient = Math.floor(randDividend / randDivisor);
-                    let randRemainder = randDividend % randDivisor;
+            container.innerHTML = '';
+            currentQuizzes = [];
 
-                    if (randQuotient > 10 && randRemainder > 0 && randDividend % 5 !== 0 && randDividend % 10 !== 0) {
-                        divisor = randDivisor;
-                        dividend = randDividend;
-                        quotient = randQuotient;
-                        remainder = randRemainder;
-                        valid = true;
-                    }
-                }
+            const pairs = drawUniquePairs(5);
+
+            for (let i = 0; i < pairs.length; i++) {
+                const dividend = pairs[i][0];
+                const divisor = pairs[i][1];
+                const quotient = Math.floor(dividend / divisor);
+                const remainder = dividend % divisor;
 
                 let q_tens = Math.floor(quotient / 10);
                 let q_ones = quotient % 10;
