@@ -205,6 +205,8 @@
         <div class="quiz-section">
             <div id="quiz-container">
                 </div>
+            <div id="result-box" style="display:none; margin-top:18px; padding:16px; border-radius:14px; font-size:1.05rem; font-weight:700; text-align:center;"></div>
+            <button id="submit-btn" class="btn btn-green" style="width:100%; margin-top:18px; display:none;" onclick="submitAll()">✅ 完成全部 5 題，提交答案</button>
         </div>
     </div>
 
@@ -307,74 +309,187 @@
                         <input type="number" id="q${i}-p3" class="quiz-input" placeholder="餘數">
                     </div>
 
-                    <button class="btn btn-green" onclick="checkAnswer(${i})">✨ 檢查這題 ✨</button>
                     <div id="fb-${i}" class="feedback"></div>
                 `;
                 container.appendChild(card);
             }
-        }
-
-        function checkAnswer(index) {
-            const qData = currentQuizzes[index];
-            if (!qData) return;
-
-            const in1 = document.getElementById(`q${index}-p1`);
-            const in2 = document.getElementById(`q${index}-p2`);
-            const in3 = document.getElementById(`q${index}-p3`);
-            const fb = document.getElementById(`fb-${index}`);
-
-            const val1 = parseInt(in1.value);
-            const val2 = parseInt(in2.value);
-            const val3 = parseInt(in3.value);
-
-            let isP1Correct = (val1 === qData.ans1);
-            let isP2Correct = (val2 === qData.ans2);
-            let isP3Correct = (val3 === qData.ans3);
-
-            updateInputStyle(in1, isP1Correct, val1);
-            updateInputStyle(in2, isP2Correct, val2);
-            updateInputStyle(in3, isP3Correct, val3);
-
-            fb.style.display = 'block';
-
-            if (isNaN(val1) || isNaN(val2) || isNaN(val3)) {
-                fb.className = 'feedback feedback-error';
-                fb.innerHTML = "⚠️ 哎呀！有格子還空著呢，請把三個部分都填好再檢查！";
-            } else if (isP1Correct && isP2Correct && isP3Correct) {
-                fb.className = 'feedback feedback-success';
-                fb.innerHTML = "🎉 太棒了！十位、個位和餘數全部正確，你是除法直式小達人！";
-                in1.disabled = true; in2.disabled = true; in3.disabled = true;
-            } else {
-                fb.className = 'feedback feedback-error';
-                let errorMsg = "❌ 有點小失誤喔，再仔細想想看：<br>";
-                if (!isP1Correct) errorMsg += "• <b>商的十位數</b>不對喔。先看被除數的十位，看它能裝多少個除數？<br>";
-                if (!isP2Correct) errorMsg += "• <b>商的個位數</b>算錯了。是不是忘記把十位剩下的餘數和個位拼在一起算？<br>";
-                if (isP1Correct && isP2Correct && !isP3Correct) errorMsg += "• 商數都找對了！但是最後<b>「相減求餘數」</b>的地方不小心減錯囉。<br>";
-
-                fb.innerHTML = errorMsg + "試著修改答案再挑戰一次！";
-                
-                logIncorrectToFirebase(qData, val1, val2, val3);
+            // 一次過提交（跟 math18 做法）：唔再逐題檢查，學生做完 5 題才按提交
+            submitted = false;
+            setStartTime = Date.now();
+            if (window.floatingTimer) window.floatingTimer.reset();   // 新一輪：計時重新開始
+            const rb = document.getElementById('result-box');
+            if (rb) { rb.style.display = 'none'; rb.innerHTML = ''; }
+            const sb = document.getElementById('submit-btn');
+            if (sb) {
+                sb.style.display = 'block';
+                sb.disabled = false;
+                sb.textContent = '✅ 完成全部 5 題，提交答案';
+                sb.onclick = function () { submitAll(); };
             }
         }
 
-        async function logIncorrectToFirebase(qData, v1, v2, v3) {
-            try {
-                if (window.db && window.addDoc) {
-                    const now = new Date();
-                    const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-                    const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
+        // ===== 提交層（跟 math18.html：做完全部才提交，一次過記錄）=====
+        let submitted = false;
+        let setStartTime = Date.now();
+        const TEST_NAME = '➗ 二位數除以單位數（直式商數）';
+        const PENDING_KEY = 'math11_pending_logs';
+        const CELL_LABEL = { p1: '商的十位', p2: '商的個位', p3: '餘數' };
+        let saveWarned = false;
 
-                    await window.addDoc(window.collection(window.db, "incorrect-log"), {
-                        username: window.getUsername ? window.getUsername() : "anonymous",
-                        question: `計算 ${qData.dividend} ÷ ${qData.divisor} (商數與餘數拆解)`,
-                        correctAnswer: `十位:${qData.ans1}, 個位:${qData.ans2}, 餘數:${qData.ans3}`,
-                        studentAnswer: `十位:${v1}, 個位:${v2}, 餘數:${v3}`,
-                        timestamp: timestamp,
-                        type: "math10_division_triple_input"
+        function hktNow() {
+            const now = new Date();
+            const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+            return hkt.toISOString().replace('T', ' ').slice(0, 19);
+        }
+        function getSafeUsername() {
+            try { return (window.getUsername && window.getUsername()) || '訪客'; }
+            catch (e) { return '訪客'; }
+        }
+        // auth.js 係 module，可能比本頁 script 遲載入：要等，唔可以「冇就當成功」
+        function fbReady() {
+            // 細路版冇 Firebase Auth（用戶名嚟自 cookie），所以只等 SDK 就緒；
+            // 商業版（alan-math-2）才需要等 bizAuth.user。
+            return !!(window.db && window.addDoc && window.collection);
+        }
+        function waitForFb(ms) {
+            const limitMs = ms || 6000;
+            return new Promise(function (resolve) {
+                if (fbReady()) return resolve(true);
+                const t0 = Date.now();
+                const iv = setInterval(function () {
+                    if (fbReady()) { clearInterval(iv); resolve(true); }
+                    else if (Date.now() - t0 > limitMs) { clearInterval(iv); resolve(false); }
+                }, 250);
+            });
+        }
+        function showSaveWarning() {
+            if (saveWarned || document.getElementById('save-warning')) return;
+            saveWarned = true;
+            const bar = document.createElement('div');
+            bar.id = 'save-warning';
+            bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:300;background:#fef3c7;border-top:4px solid #f59e0b;color:#78350f;padding:12px;font-weight:700;text-align:center;';
+            bar.innerHTML = (location.protocol === 'file:'
+                ? '⚠️ 以檔案方式開啟會封鎖 Firebase，這次成績<b>不會</b>存入學習記錄。請用 http://localhost:3000/math11.html 再做一次。'
+                : '⚠️ 這次成績<b>未能</b>存入學習記錄（Firebase 未載入或寫入失敗）。已暫存本機，下次用正常網頁開啟會自動補寫。');
+            document.body.appendChild(bar);
+        }
+        function queuePending(coll, data) {
+            try {
+                const q = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+                q.push({ coll: coll, data: data });
+                localStorage.setItem(PENDING_KEY, JSON.stringify(q));
+            } catch (e) { /* localStorage 被封鎖都冇辦法 */ }
+        }
+        async function flushPending() {
+            if (!fbReady()) return;
+            let q = [];
+            try { q = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch (e) { q = []; }
+            if (!q.length) return;
+            const keep = [];
+            for (const item of q) {
+                try { await window.addDoc(window.collection(window.db, item.coll), item.data); }
+                catch (e) { keep.push(item); }
+            }
+            try { localStorage.setItem(PENDING_KEY, JSON.stringify(keep)); } catch (e) {}
+        }
+        async function writeDoc(coll, data) {
+            if (await waitForFb(6000)) {
+                try {
+                    await window.addDoc(window.collection(window.db, coll), data);
+                    return true;
+                } catch (e) {
+                    console.error('Firebase write failed:', coll, e);
+                    queuePending(coll, data);
+                    showSaveWarning();
+                    return false;
+                }
+            }
+            queuePending(coll, data);
+            showSaveWarning();
+            return false;
+        }
+
+        async function submitAll() {
+            if (submitted) return;
+            submitted = true;
+            const sb = document.getElementById('submit-btn');
+            if (sb) { sb.disabled = true; sb.style.display = 'none'; }
+
+            let score = 0;
+            const wrongRecords = [];
+
+            currentQuizzes.forEach(function (q, i) {
+                const ans = [q.ans1, q.ans2, q.ans3];
+                const keys = ['p1', 'p2', 'p3'];
+                const blanks = [];
+                let allCorrect = true;
+
+                keys.forEach(function (k, idx) {
+                    const inp = document.getElementById('q' + i + '-' + k);
+                    if (!inp) return;
+                    const raw = String(inp.value).trim();
+                    const isRight = raw !== '' && Number(raw) === ans[idx];
+                    inp.disabled = true;
+                    inp.classList.add(isRight ? 'input-correct' : 'input-wrong');
+                    if (!isRight) {
+                        allCorrect = false;
+                        blanks.push({ label: CELL_LABEL[k], correctAnswer: String(ans[idx]), studentAnswer: raw || '未填' });
+                    }
+                });
+
+                if (allCorrect) score++;
+
+                const fb = document.getElementById('fb-' + i);
+                if (fb) {
+                    fb.style.display = 'block';
+                    fb.className = 'feedback ' + (allCorrect ? 'feedback-success' : 'feedback-error');
+                    fb.innerHTML = allCorrect ? '✅ 這題全對！'
+                        : '❌ 這題有格答錯（正確：商 ' + Math.floor(q.dividend / q.divisor) + ' 餘 ' + (q.dividend % q.divisor) + '）';
+                }
+
+                if (blanks.length) {
+                    wrongRecords.push({
+                        question: '第' + (i + 1) + '題 ' + q.dividend + ' ÷ ' + q.divisor +
+                                  '（商 ' + Math.floor(q.dividend / q.divisor) + ' 餘 ' + (q.dividend % q.divisor) + '）',
+                        blanks: blanks
                     });
                 }
-            } catch (error) {
-                console.error("Firebase logging failed:", error);
+            });
+
+            const totalSec = Math.max(1, Math.round((Date.now() - setStartTime) / 1000));
+            if (window.floatingTimer) window.floatingTimer.stop();    // 提交後停止計時
+            await writeDoc('test-log', {
+                username: getSafeUsername(),
+                test: TEST_NAME,
+                score: score * 20,
+                timespend: Math.floor(totalSec / 60) + '分' + (totalSec % 60) + '秒',
+                timestamp: hktNow()
+            });
+
+            for (const r of wrongRecords) {
+                await writeDoc('incorrect-log', {
+                    username: getSafeUsername(),
+                    question: r.question,
+                    timestamp: hktNow(),
+                    blanks: r.blanks,
+                    correctAnswer: r.blanks.map(function (b) { return b.correctAnswer; }).join(', '),
+                    studentAnswer: r.blanks.map(function (b) { return b.studentAnswer; }).join(', ')
+                });
+            }
+
+            const rb = document.getElementById('result-box');
+            if (rb) {
+                rb.style.display = 'block';
+                rb.style.background = score === 5 ? '#e8f7ee' : (score >= 3 ? '#fff7e6' : '#fdeceb');
+                rb.innerHTML = '成績：' + score + ' / 5（' + (score * 20) + ' 分）' +
+                    (score === 5 ? ' 🎉 全部正確！'
+                                 : (wrongRecords.length ? '　已記錄 ' + wrongRecords.length + ' 題錯處到「錯誤記錄」' : ''));
+            }
+            if (sb) {
+                sb.style.display = 'block';
+                sb.disabled = false;
+                sb.textContent = '🎲 再來 5 題';
+                sb.onclick = function () { generateQuizzes(); };
             }
         }
 
@@ -391,17 +506,9 @@
         }
 
         // 獨立於生命週期的安全初始化，確保雙擊本地檔案也能立即看到題目
+        let entranceLogged = false;
         function initQuiz() {
-            generateQuizzes();
-            try {
-                const existingUser = document.cookie.split('; ').find(row => row.startsWith('math_username='));
-                if (existingUser) {
-                    const username = decodeURIComponent(existingUser.split('=')[1]);
-                    logEntrance(username);
-                }
-            } catch (e) {
-                console.log("Cookie or Firebase init skipped in local file mode.");
-            }
+            if (!document.querySelector('.quiz-card')) generateQuizzes();
         }
 
         // 確保在各種加載模式下都能被呼叫
@@ -411,29 +518,24 @@
             initQuiz();
         }
 
-        window.onload = initQuiz;
-
-        window.onUserSet = function (username) {
-            logEntrance(username);
+        window.onUserSet = function () {
+            flushPending();
+            if (!entranceLogged) {
+                entranceLogged = true;
+                logEntrance();
+            }
         };
 
-        async function logEntrance(username) {
-            try {
-                if (window.db && window.addDoc) {
-                    const now = new Date();
-                    const hkt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-                    const timestamp = hkt.toISOString().replace('T', ' ').slice(0, 19);
-
-                    await window.addDoc(window.collection(window.db, "test-log"), {
-                        username: username,
-                        test: "🚀 二位數除以單位數 - 直式商數特訓",
-                        timestamp: timestamp,
-                        status: "entered"
-                    });
-                }
-            } catch (error) {
-                console.error("Firebase entrance logging failed:", error);
-            }
+        async function logEntrance() {
+            // 未拿到真正用戶名就唔好寫「訪客」入場記錄
+            const who = getSafeUsername();
+            if (!who || who === '訪客') return;
+            await writeDoc('test-log', {
+                username: who,
+                test: TEST_NAME,
+                timestamp: hktNow(),
+                status: 'entered'
+            });
         }
     </script>
 </body>

@@ -74,8 +74,8 @@
         let lastDoc = null;
         let loading = false;
 
-        // 一次性索引（username ASC, timestamp DESC）—— 建好之後此頁只需 1 次查詢（~0.7 秒）
-        const INDEX_URL = 'https://console.firebase.google.com/v1/r/project/p2math-791c8/firestore/indexes?create_composite=ClJwcm9qZWN0cy9wMm1hdGgtNzkxYzgvZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL2luY29ycmVjdC1sb2cvaW5kZXhlcy9fEAEaDAoIdXNlcm5hbWUQARoNCgl0aW1lc3RhbXAQAhoMCghfX25hbWVfXxAC';
+        // 2026-11-27: composite index 已經完全唔需要（改用 uid 查 + 瀏覽器排序），
+        // 所以舊嘅 INDEX_URL 常量同管理員連結一併刪走。
 
         const cacheKey = (u, t) => `alanmath_log_${u}_${t}`;
         function readCache(u, t) {
@@ -139,25 +139,20 @@
             loading = true;
 
             try {
-                const parts = [
-                    window.collection(window.db, currentTab),
-                    window.where("username", "==", currentUsername),
-                    window.orderBy("timestamp", "desc"),
-                    window.limit(PAGE)
-                ];
-                if (append && lastDoc) parts.push(startAfter(lastDoc));
-
-                const snap = await window.getDocs(window.query(...parts));
-                const docs = docsFromSnapshot(snap);
-
-                if (snap.docs.length) lastDoc = snap.docs[snap.docs.length - 1];
+                // 2026-11-27: 改用 uid 查（唔用 username）而且唔用 orderBy。
+                // 原因 1：舊記錄的 username 有三種寫法（child-student001 / student001 / 訪客），
+                //          用 username 過濾會漏記錄；uid 由 auth.js 自動蓋章，永遠一致。
+                // 原因 2：where(username)+orderBy(timestamp) 需要 composite index，未建立時
+                //          整頁載入失敗，仲會向小朋友顯示「建立索引」管理員連結。
+                const uid = (window.bizAuth && window.bizAuth.user && window.bizAuth.user.uid) || '';
+                const docs = await fetchAllForUser(uid, currentUsername);
 
                 if (!append) {
                     list.innerHTML = '';
                     const note = document.createElement('p');
                     note.className = 'text-gray-500 text-center mb-4';
                     note.textContent = docs.length
-                        ? `顯示最新 ${docs.length} 筆${docs.length === PAGE ? '（可繼續載入更舊的記錄）' : ''}`
+                        ? `共 ${docs.length} 筆記錄，顯示最新 ${Math.min(docs.length, 200)} 筆`
                         : '';
                     if (docs.length) list.appendChild(note);
                 }
@@ -172,62 +167,30 @@
 
                 const holder = document.createElement('div');
                 holder.className = 'space-y-4';
-                renderDocs(holder, docs);
+                renderDocs(holder, docs.slice(0, 200));
                 while (holder.firstChild) list.appendChild(holder.firstChild);
 
-                if (!append) writeCache(currentUsername, currentTab, docs);
-                addMoreButton(list, snap.docs.length);
+                writeCache(currentUsername || uid, currentTab, docs.slice(0, 200));
             } catch (e) {
-                const msg = String(e && e.message || e);
-                const linkMatch = msg.match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/);
-                if (linkMatch || /index/i.test(msg)) {
-                    // 索引未建立：先照舊方法（分頁掃描）拿到資料，唔會令家長乜都睇唔到
-                    try {
-                        const docs = await legacyFetchAll();
-                        list.innerHTML = '';
-                        const banner = document.createElement('div');
-                        banner.className = 'bg-amber-50 border-2 border-amber-400 rounded-2xl p-4 text-amber-900 mb-3';
-                        banner.innerHTML = '<p class="font-bold">⚡ 想載入得更快？建立一次性索引（約 1-2 分鐘）：' +
-                            `<a class="underline break-all" target="_blank" href="${linkMatch ? linkMatch[0] : INDEX_URL}">按此建立</a>` +
-                            '。建立後此頁只需 1 次查詢（約 0.7 秒）。</p>';
-                        list.appendChild(banner);
-                        if (docs.length === 0) {
-                            empty.classList.remove('hidden');
-                        } else {
-                            empty.classList.add('hidden');
-                            const note = document.createElement('p');
-                            note.className = 'text-gray-500 text-center mb-4';
-                            note.textContent = `共 ${docs.length} 筆記錄，顯示最新 ${Math.min(docs.length, 200)} 筆`;
-                            list.appendChild(note);
-                            const holder = document.createElement('div');
-                            holder.className = 'space-y-4';
-                            renderDocs(holder, docs.slice(0, 200));
-                            while (holder.firstChild) list.appendChild(holder.firstChild);
-                            writeCache(currentUsername, currentTab, docs.slice(0, 200));
-                        }
-                    } catch (e2) {
-                        list.innerHTML = `<p class="text-red-500">載入失敗：${String(e2 && e2.message || e2)}</p>`;
-                        console.error(e2);
-                    }
-                } else {
-                    list.innerHTML = `<p class="text-red-500">載入失敗：${msg}</p>`;
-                }
+                // 冇索引查詢、冇 fallback banner：任何錯誤都直接顯示，唔會再向任何用戶
+                // 顯示管理員操作連結。
+                list.innerHTML = `<p class="text-red-500">載入失敗：${String(e && e.message || e)}</p>`;
                 console.error(e);
             } finally {
                 loading = false;
             }
         };
 
-        // 舊方法（無索引時後備）：分頁掃描全部，再在瀏覽器排序
-        async function legacyFetchAll() {
+        // 用 uid 查（uid 由 auth.js 蓋章，唔會因 username 寫法唔同而漏記錄）；
+        // 唔用 orderBy → 唔需要 composite index。全部抓回後在瀏覽器排序。
+        async function fetchAllForUser(uid, username) {
             const PAGE_SIZE = 300;
             let cursor = null, all = [];
-            for (let page = 0; page < 40; page++) {
-                const parts = [
-                    window.collection(window.db, currentTab),
-                    window.where("username", "==", currentUsername),
-                    window.limit(PAGE_SIZE)
-                ];
+            const base = uid
+                ? [window.collection(window.db, currentTab), window.where("uid", "==", uid)]
+                : [window.collection(window.db, currentTab), window.where("username", "==", username)];
+            for (let page = 0; page < 20; page++) {
+                const parts = base.concat([window.limit(PAGE_SIZE)]);
                 if (cursor) parts.push(startAfter(cursor));
                 const snap = await window.getDocs(window.query(...parts));
                 all = all.concat(snap.docs.map(d => ({ id: d.id, ...d.data() })));

@@ -1,6 +1,8 @@
 // auth.js - Firebase Init and Simple User Management
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getFirestore, collection, addDoc, query, where, getDocs, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+// floating elapsed-time pill on practice pages that do not have their own timer (2026-11-27)
+import './timer.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSy...odA4",
